@@ -34,6 +34,12 @@
               "node_modules/@fontsource/atkinson-hyperlegible/400.css",
               "node_modules/@fontsource/atkinson-hyperlegible/700.css",
               "src/styles.scss"
+            ],
+            "webWorkerTsConfig": "tsconfig.worker.json",
+            "server": "src/main.server.ts",
+            "outputMode": "static",
+            "allowedCommonJsDependencies": [
+              "quill-delta"
             ]
           },
           "configurations": {
@@ -41,7 +47,7 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kB",
+                  "maximumWarning": "650kB",
                   "maximumError": "1MB"
                 },
                 {

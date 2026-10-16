@@ -5,6 +5,59 @@
   <title>Przedszkole Parafialne w Mokrzyskach</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!--
+    Pre-paint (przed pierwszym malowaniem, bez sieci): kolory pory roku w strefie Europe/Warsaw albo ostatni motyw
+    z /api/theme (localStorage, zapisuje ThemeService) + zapisane ustawienia paska dostępności (klucz `a11y`).
+    Tabela pór roku = DEFAULT_THEMES (theme/default-themes.ts) — zgodność pilnuje theme/prepaint.spec.ts.
+  -->
+  <script id="prepaint">
+    (function (root) {
+      var SHADES = ['50', '100', '200', '300', '400', '500', '600', '700', '800', '900'];
+      var SEASONS = [
+        ['03-21', ['#f0fdf4', '#dcfce7', '#bbf7d0', '#86efac', '#4ade80', '#22c55e', '#16a34a', '#15803d', '#166534', '#14532d']],
+        ['06-23', ['#fefce8', '#fef9c3', '#fef08a', '#fde047', '#facc15', '#eab308', '#ca8a04', '#a16207', '#854d0e', '#713f12']],
+        ['09-23', ['#fef2f2', '#fee2e2', '#fecaca', '#fca5a5', '#f87171', '#ef4444', '#dc2626', '#b91c1c', '#991b1b', '#7f1d1d']],
+        ['12-21', ['#eff6ff', '#dbeafe', '#bfdbfe', '#93c5fd', '#60a5fa', '#3b82f6', '#2563eb', '#1d4ed8', '#1e40af', '#1e3a8a']]
+      ];
+      var KEYS = SHADES.concat(['accent', 'text']);
+      var HEX = /^#[0-9a-fA-F]{6}$/;
+      function read(key) {
+        try { return JSON.parse(window.localStorage.getItem(key)); } catch (e) { return null; }
+      }
+      function monthDay(now) {
+        try {
+          var parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Warsaw', month: '2-digit', day: '2-digit' }).formatToParts(now), m, d;
+          for (var j = 0; j < parts.length; j++) {
+            if (parts[j].type === 'month') m = parts[j].value;
+            if (parts[j].type === 'day') d = parts[j].value;
+          }
+          return m + '-' + d;
+        } catch (e) {
+          return ('0' + (now.getMonth() + 1)).slice(-2) + '-' + ('0' + now.getDate()).slice(-2);
+        }
+      }
+      try {
+        var md = monthDay(new Date()), colors = SEASONS[SEASONS.length - 1][1], i;
+        for (i = 0; i < SEASONS.length; i++) if (md >= SEASONS[i][0]) colors = SEASONS[i][1];
+        var palette = { accent: colors[7], text: colors[9] };
+        for (i = 0; i < SHADES.length; i++) palette[SHADES[i]] = colors[i];
+        var cached = read('theme-palette'), valid = !!cached && typeof cached === 'object';
+        for (i = 0; valid && i < KEYS.length; i++) valid = typeof cached[KEYS[i]] === 'string' && HEX.test(cached[KEYS[i]]);
+        if (valid) palette = cached;
+        for (i = 0; i < KEYS.length; i++) {
+          var k = KEYS[i];
+          root.style.setProperty(k === 'accent' || k === 'text' ? '--app-' + k : '--app-primary-' + k, palette[k]);
+        }
+      } catch (e) { /* zostają kolory domyślne ze styles.scss */ }
+      var a = read('a11y');
+      if (a && typeof a === 'object') {
+        if (a.fontScale === 1 || a.fontScale === 2) root.classList.add('a11y-font-' + a.fontScale);
+        if (a.contrast === true) root.classList.add('a11y-contrast');
+        if (a.readableFont === true) root.classList.add('a11y-readable');
+        if (a.grayscale === true) root.classList.add('a11y-grayscale');
+      }
+    })(document.documentElement);
+  </script>
   <link rel="icon" type="image/x-icon" href="favicon.ico">
 </head>
 <body>
