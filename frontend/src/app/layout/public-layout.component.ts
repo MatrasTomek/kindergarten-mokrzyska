@@ -3,6 +3,7 @@ import { Component, inject } from '@angular/core';
 import { RouterLink, RouterOutlet } from '@angular/router';
 import { A11yToolbarComponent } from '../a11y/a11y-toolbar.component';
 import { SITE_NAME } from '../core/config';
+import { TODAY } from '../theme/theme.service';
 
 @Component({
   selector: 'app-public-layout',
@@ -40,7 +41,8 @@ import { SITE_NAME } from '../core/config';
 })
 export class PublicLayoutComponent {
   protected readonly siteName = SITE_NAME;
-  protected readonly year = new Date().getFullYear();
+  /** Liczony przy starcie w przeglądarce (nadpisuje rok zamrożony w prerenderowanym HTML). */
+  protected readonly year = inject(TODAY)().getFullYear();
   private readonly doc = inject(DOCUMENT);
 
   /** href="#main" z <base href="/"> nawigowałby na stronę główną — przenosimy fokus ręcznie. */
