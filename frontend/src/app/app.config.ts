@@ -1,7 +1,7 @@
 import { ApplicationConfig, inject, LOCALE_ID, provideAppInitializer, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { registerLocaleData } from '@angular/common';
 import localePl from '@angular/common/locales/pl';
-import { provideHttpClient, withInterceptors, withXhr } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideClientHydration, withEventReplay } from '@angular/platform-browser';
 import { provideRouter, withComponentInputBinding, withInMemoryScrolling } from '@angular/router';
 import { providePrimeNG } from 'primeng/config';
@@ -19,7 +19,7 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     { provide: LOCALE_ID, useValue: 'pl' },
     provideRouter(routes, withComponentInputBinding(), withInMemoryScrolling({ scrollPositionRestoration: 'top' })),
-    provideHttpClient(withXhr(), withInterceptors([ssrApiInterceptor, authInterceptor])),
+    provideHttpClient(withInterceptors([ssrApiInterceptor, authInterceptor])),
     providePrimeNG({ theme: { preset: AppPreset, options: { darkModeSelector: false } }, translation: PL_TRANSLATION }),
     provideAppInitializer(() => inject(ThemeService).load()),
     provideClientHydration(withEventReplay()),

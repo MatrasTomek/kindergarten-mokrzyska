@@ -1,11 +1,11 @@
 import { Component, computed, effect, input, signal } from '@angular/core';
-import { Galleria } from 'primeng/galleria';
+import { GalleriaModule } from 'primeng/galleria';
 import { uploadUrl } from '../core/config';
 import { PostImage } from '../core/models';
 
 @Component({
   selector: 'app-gallery',
-  imports: [Galleria],
+  imports: [GalleriaModule],
   template: `
     @if (images().length) {
       <ul class="gallery">

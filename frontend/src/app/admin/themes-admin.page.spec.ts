@@ -144,7 +144,7 @@ describe('ThemesAdminPage', () => {
     flushInitial(http);
     const confirm = TestBed.inject(ConfirmationService);
     let accept: () => void = () => undefined;
-    confirm.requireConfirmation$.subscribe((c) => (accept = c!.accept!));
+    confirm.requireConfirmation$.subscribe((c) => (accept = c!.accept! as () => void));
     page.remove(special);
     accept();
     http.expectOne((r) => r.method === 'DELETE' && r.url === '/api/admin/themes/t9').flush(null);
