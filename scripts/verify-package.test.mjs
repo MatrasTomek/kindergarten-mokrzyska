@@ -1,0 +1,122 @@
+// Uruchom: node --test scripts/verify-package.test.mjs
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
+import { PRERENDERED_ROUTES, verifyPackage } from './verify-package.mjs';
+
+const ROOT_HTACCESS = 'RewriteEngine On\nRewriteRule ^ /index.csr.html [L]\n';
+const API_HTACCESS = [
+  'RewriteCond %{HTTPS} !=on',
+  'RewriteCond %{HTTP:X-Forwarded-Proto} !=https',
+  'RewriteRule ^ - [F]',
+  'RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]',
+  'RewriteRule ^index\\.php$ - [L]',
+  'RewriteRule ^ index.php [QSA,L]',
+  '<FilesMatch "(\\.(php\\d?|phtml|phar)|^\\.env.*|^\\.user\\.ini|^composer\\.(json|lock))$">',
+  '  Require all denied',
+  '</FilesMatch>',
+].join('\n');
+const UPLOADS_HTACCESS = [
+  'Options -Indexes',
+  'AddType image/webp .webp',
+  'AddType image/jpeg .jpg .jpeg',
+  'AddType application/pdf .pdf',
+  'Require all denied',
+  '<FilesMatch "(?i)\\.(jpe?g|webp|pdf)$">',
+  '  Require all granted',
+  '</FilesMatch>',
+].join('\n');
+
+/** Minimalna poprawna paczka; `overrides`: ścieżka → treść (null = nie twórz). */
+function makePackage(overrides = {}) {
+  const dir = mkdtempSync(join(tmpdir(), 'pkg-'));
+  const files = {
+    'index.html': '<app-root ngh="0"></app-root>',
+    'index.csr.html': '<app-root></app-root>',
+    '.htaccess': ROOT_HTACCESS,
+    '.ovhconfig': 'app.engine=php\napp.engine.version=8.4\n',
+    'api/index.php': '<?php',
+    'api/vendor/autoload.php': '<?php',
+    'api/.htaccess': API_HTACCESS,
+    'api/.user.ini': 'upload_max_filesize=12M\npost_max_size=13M\n',
+    'api/.env.example': 'APP_ENV=dev',
+    'uploads/.htaccess': UPLOADS_HTACCESS,
+    ...Object.fromEntries(PRERENDERED_ROUTES.map((r) => [`${r}/index.html`, '<html></html>'])),
+    ...overrides,
+  };
+  for (const [path, content] of Object.entries(files)) {
+    if (content === null) continue;
+    mkdirSync(dirname(join(dir, path)), { recursive: true });
+    writeFileSync(join(dir, path), content);
+  }
+  return dir;
+}
+
+function failuresFor(overrides) {
+  const dir = makePackage(overrides);
+  try {
+    return verifyPackage(dir).filter((r) => !r.ok).map((r) => r.check);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+test('kompletna paczka przechodzi wszystkie sprawdzenia', () => {
+  assert.deepEqual(failuresFor({}), []);
+});
+
+test('lista prerenderowanych tras zawiera kluczowe strony', () => {
+  for (const r of ['aktualnosci', 'grupy', 'kontakt', 'o-nas']) assert.ok(PRERENDERED_ROUTES.includes(r), r);
+});
+
+const API_CHECK = 'api/.htaccess: tylko HTTPS, Authorization, front controller, blokada .env';
+const UPLOADS_CHECK = 'uploads/.htaccess: deny-all poza jpg/webp/pdf, typy MIME';
+const FORBIDDEN_CHECK = 'brak .git, node_modules, plików Dockera, katalogów tests';
+
+const cases = [
+  ['brak index.csr.html', { 'index.csr.html': null }, 'index.csr.html'],
+  ['brak prerenderowanego index.html', { 'index.html': null }, 'index.html'],
+  ['brak prerenderu trasy', { 'aktualnosci/index.html': null }, 'aktualnosci/index.html'],
+  ['prerender panelu admina', { 'admin/index.html': '<html>' }, 'brak admin/'],
+  ['prerender trasy wpisu', { 'wpis/x/index.html': '<html>' }, 'brak wpis/'],
+  ['fallback na index.html', { '.htaccess': 'RewriteRule ^ /index.html [L]\n' }, '.htaccess: fallback SPA na /index.csr.html'],
+  ['brak .htaccess', { '.htaccess': null }, '.htaccess: fallback SPA na /index.csr.html'],
+  ['.ovhconfig z PHP 7.4', { '.ovhconfig': 'app.engine.version=7.4\n' }, '.ovhconfig: PHP 8.4'],
+  ['brak api/index.php', { 'api/index.php': null }, 'api/index.php'],
+  ['brak vendor', { 'api/vendor/autoload.php': null }, 'api/vendor/autoload.php'],
+  ['phpunit w vendor', { 'api/vendor/phpunit/phpunit/x.php': '<?php' }, 'brak api/vendor/phpunit (composer --no-dev)'],
+  ['brak api/.htaccess', { 'api/.htaccess': null }, API_CHECK],
+  ['api/.htaccess bez blokady HTTP', { 'api/.htaccess': API_HTACCESS.replace('RewriteRule ^ - [F]', '') }, API_CHECK],
+  ['api/.htaccess bez Authorization', { 'api/.htaccess': API_HTACCESS.replace(/^.*E=HTTP_AUTHORIZATION.*$/m, '') }, API_CHECK],
+  ['api/.htaccess bez blokady .env', { 'api/.htaccess': API_HTACCESS.replace('|^\\.env.*', '') }, API_CHECK],
+  ['api/.htaccess z FilesMatch ".*" (blokuje całe API)', { 'api/.htaccess': `${API_HTACCESS}\n<FilesMatch ".*">\n  Require all denied\n</FilesMatch>` }, API_CHECK],
+  ['brak api/.user.ini', { 'api/.user.ini': null }, 'api/.user.ini: upload_max_filesize=12M, post_max_size=13M'],
+  ['złe limity w .user.ini', { 'api/.user.ini': 'upload_max_filesize=2M\npost_max_size=13M\n' }, 'api/.user.ini: upload_max_filesize=12M, post_max_size=13M'],
+  ['brak uploads/.htaccess', { 'uploads/.htaccess': null }, UPLOADS_CHECK],
+  ['uploads bez deny-all', { 'uploads/.htaccess': UPLOADS_HTACCESS.replace(/^Require all denied$/m, '') }, UPLOADS_CHECK],
+  ['uploads bez typu webp', { 'uploads/.htaccess': UPLOADS_HTACCESS.replace('AddType image/webp .webp', '') }, UPLOADS_CHECK],
+  ['uploads z szerszą allowlistą', { 'uploads/.htaccess': UPLOADS_HTACCESS.replace('jpe?g|webp|pdf', 'jpe?g|webp|pdf|php') }, UPLOADS_CHECK],
+  ['katalog .git', { '.git/HEAD': 'ref' }, FORBIDDEN_CHECK],
+  ['node_modules', { 'node_modules/x/index.js': '' }, FORBIDDEN_CHECK],
+  ['Dockerfile w api', { 'api/docker/Dockerfile': 'FROM php' }, FORBIDDEN_CHECK],
+  ['docker-compose.yml', { 'docker-compose.yml': 'services:' }, FORBIDDEN_CHECK],
+  ['testy backendu', { 'api/tests/FooTest.php': '<?php' }, FORBIDDEN_CHECK],
+  ['testy w vendor (nieprzycięte)', { 'api/vendor/mongodb/mongodb/tests/x.php': '<?php' }, FORBIDDEN_CHECK],
+  ['api/.env w paczce', { 'api/.env': 'JWT_SECRET=x' }, 'brak plików .env'],
+  ['zagnieżdżony .env.prod', { 'api/src/.env.prod': 'x' }, 'brak plików .env'],
+  ['.env w katalogu głównym', { '.env': 'x' }, 'brak plików .env'],
+];
+
+for (const [name, overrides, expected] of cases) {
+  test(`wykrywa: ${name}`, () => {
+    assert.deepEqual(failuresFor(overrides), [expected]);
+  });
+}
+
+test('nieistniejący katalog paczki = wszystko niezaliczone, bez wyjątku', () => {
+  const results = verifyPackage(join(tmpdir(), 'nie-ma-takiego-katalogu-pkg'));
+  assert.ok(results.length > 0);
+  assert.ok(results.some((r) => !r.ok));
+});

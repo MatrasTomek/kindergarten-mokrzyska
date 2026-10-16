@@ -10,9 +10,9 @@ import { SpeechService } from './speech.service';
   template: `
     <div class="bar" role="region" aria-label="Ułatwienia dostępu">
       <div class="group" role="group" aria-label="Rozmiar tekstu">
-        <button type="button" (click)="a11y.decreaseFont()" aria-label="Zmniejsz tekst">A−</button>
+        <button type="button" (click)="a11y.decreaseFont()" aria-label="A− Zmniejsz tekst">A−</button>
         <button type="button" (click)="a11y.resetFont()" aria-label="Domyślny rozmiar tekstu">A</button>
-        <button type="button" (click)="a11y.increaseFont()" aria-label="Powiększ tekst">A+</button>
+        <button type="button" (click)="a11y.increaseFont()" aria-label="A+ Powiększ tekst">A+</button>
       </div>
       <button type="button" data-test="contrast" [attr.aria-pressed]="a11y.state().contrast" (click)="a11y.toggle('contrast')">
         @if (a11y.state().contrast) { <span class="check" aria-hidden="true">✓</span> }

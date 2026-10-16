@@ -18,6 +18,7 @@ import { formatSize } from '../public/content/format-size';
 import { ImageUploaderComponent } from '../shared/images/image-uploader.component';
 import { RichTextComponent } from '../shared/rich-text.component';
 import { LeaveConfirmable } from './unsaved-changes.guard';
+import { focusAfterConfirm } from '../shared/focus-after-confirm';
 
 const MAX_PDF_BYTES = 10 * 1024 * 1024;
 
@@ -295,7 +296,7 @@ export class ContentAdminPage implements LeaveConfirmable {
         this.api.deleteContent(item.id).subscribe({
           next: () => {
             this.messages.add({ severity: 'success', summary: 'Element usunięty' });
-            this.heading()?.nativeElement.focus();
+            focusAfterConfirm(this.heading()?.nativeElement);
             this.load();
           },
           error: (e) => this.messages.add({ severity: 'error', summary: apiErrorMessage(e) }),
@@ -318,7 +319,7 @@ export class ContentAdminPage implements LeaveConfirmable {
   protected restoreFocus(): void {
     const el = this.opener;
     this.opener = null;
-    if (el?.isConnected) el.focus();
+    focusAfterConfirm(el);
   }
 
   private rememberOpener(): void {

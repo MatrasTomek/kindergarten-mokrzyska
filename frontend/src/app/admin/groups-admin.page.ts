@@ -9,6 +9,7 @@ import { Textarea } from 'primeng/textarea';
 import { AdminApi } from '../core/api/admin-api';
 import { apiErrorMessage } from '../core/api-error';
 import { Group, GroupInput } from '../core/models';
+import { focusAfterConfirm } from '../shared/focus-after-confirm';
 
 @Component({
   selector: 'app-groups-admin-page',
@@ -136,7 +137,7 @@ export class GroupsAdminPage {
         this.api.deleteGroup(g.id).subscribe({
           next: () => {
             this.messages.add({ severity: 'success', summary: 'Grupa usunięta' });
-            this.heading()?.nativeElement.focus();
+            focusAfterConfirm(this.heading()?.nativeElement);
             this.load();
           },
           error: (e) => this.messages.add({ severity: 'error', summary: apiErrorMessage(e) }),
@@ -157,7 +158,7 @@ export class GroupsAdminPage {
   protected restoreFocus(): void {
     const el = this.opener;
     this.opener = null;
-    if (el?.isConnected) el.focus();
+    focusAfterConfirm(el);
   }
 
   private rememberOpener(): void {

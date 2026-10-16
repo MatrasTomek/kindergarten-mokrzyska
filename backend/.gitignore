@@ -3,3 +3,5 @@
 /public/uploads/
 .phpunit.cache/
 .phpunit.result.cache
+.env.*
+!.env.example

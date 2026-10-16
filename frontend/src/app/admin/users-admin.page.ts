@@ -10,6 +10,7 @@ import { AdminApi } from '../core/api/admin-api';
 import { apiErrorMessage } from '../core/api-error';
 import { AuthService } from '../core/auth/auth.service';
 import { Role, UserAccount } from '../core/models';
+import { focusAfterConfirm } from '../shared/focus-after-confirm';
 
 const ROLES = [
   { value: 'admin' as Role, label: 'Administrator — wszystko' },
@@ -225,7 +226,7 @@ export class UsersAdminPage {
         this.api.deleteUser(u.id).subscribe({
           next: () => {
             this.messages.add({ severity: 'success', summary: 'Użytkownik usunięty' });
-            this.heading()?.nativeElement.focus();
+            focusAfterConfirm(this.heading()?.nativeElement);
             this.load();
           },
           error: (e) => {
@@ -249,7 +250,7 @@ export class UsersAdminPage {
   protected restoreFocus(): void {
     const el = this.opener;
     this.opener = null;
-    if (el?.isConnected) el.focus();
+    focusAfterConfirm(el);
   }
 
   private rememberOpener(): void {

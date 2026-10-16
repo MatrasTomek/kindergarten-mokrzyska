@@ -1,0 +1,45 @@
+# /.htaccess nowej strony (generowany przez scripts/package.mjs, który wstawia nazwę pliku fallbacku SPA).
+# Założenie: ten katalog jest katalogiem głównym (DocumentRoot) domeny nowej strony — osobny wpis
+# multisite w OVH. Reguły dotyczą tylko tego katalogu i podkatalogów; stara strona w innym folderze
+# nie jest dotknięta. NIE wgrywaj tego pliku do folderu starej strony.
+Options -Indexes
+DirectoryIndex index.html
+# Prerenderowane trasy to katalogi (aktualnosci/index.html). Bez tego mod_dir robiłby 301
+# /aktualnosci → /aktualnosci/; zamiast tego serwujemy plik wewnętrznie (reguła niżej).
+DirectorySlash Off
+RewriteEngine On
+
+# HTTPS (X-Forwarded-Proto: gdyby TLS kończył się na proxy przed Apache — chroni przed pętlą)
+RewriteCond %{HTTPS} !=on
+RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# API i pliki mają własne .htaccess (api/ ma własny RewriteEngine, więc i tak tu nie trafia)
+RewriteRule ^(api|uploads)(/|$) - [L]
+
+# Strona główna = prerenderowany index.html
+RewriteRule ^$ index.html [L]
+
+# Prerenderowane katalogi: /aktualnosci i /aktualnosci/ → aktualnosci/index.html (bez przekierowania)
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteCond %{REQUEST_FILENAME}/index.html -f
+RewriteRule ^(.+?)/?$ $1/index.html [L]
+
+# Istniejące pliki (JS, CSS, obrazki, prerenderowane .html)
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^ - [L]
+
+# Trasy renderowane w przeglądarce: /wpis/*, /grupy/*, /admin/* i nieznane adresy (404 robi Angular).
+# ZAWSZE index.csr.html — index.html to prerenderowana strona główna ze znacznikami hydratacji.
+RewriteRule ^ /__FALLBACK__ [L]
+
+<IfModule mod_headers.c>
+  <FilesMatch "\.(js|css|woff2?|png|jpg|webp|svg|ico)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+  <FilesMatch "\.html$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>

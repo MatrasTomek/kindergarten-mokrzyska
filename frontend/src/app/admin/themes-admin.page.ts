@@ -14,6 +14,7 @@ import { Palette, Settings, Theme, ThemeInput } from '../core/models';
 import { paletteWarnings } from '../theme/contrast';
 import { DEFAULT_THEMES, SHADES } from '../theme/default-themes';
 import { ThemeService } from '../theme/theme.service';
+import { focusAfterConfirm } from '../shared/focus-after-confirm';
 
 type PaletteKey = (typeof SHADES)[number] | 'accent' | 'text';
 
@@ -258,7 +259,7 @@ export class ThemesAdminPage {
         this.api.deleteTheme(t.id!).subscribe({
           next: () => {
             this.messages.add({ severity: 'success', summary: 'Motyw usunięty' });
-            this.heading()?.nativeElement.focus();
+            focusAfterConfirm(this.heading()?.nativeElement);
             this.load();
             void this.themeService.load();
           },
@@ -278,7 +279,7 @@ export class ThemesAdminPage {
   private restoreFocus(): void {
     const el = this.opener;
     this.opener = null;
-    if (el?.isConnected) el.focus();
+    focusAfterConfirm(el);
   }
 
   private rememberOpener(): void {

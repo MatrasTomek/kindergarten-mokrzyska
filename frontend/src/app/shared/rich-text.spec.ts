@@ -107,6 +107,15 @@ describe('RichTextComponent', () => {
     expect(f.nativeElement.querySelector('#' + id).textContent).toContain('Treść');
   });
 
+  it('names the heading picker button and keeps aria-label off the role-less picker span (axe)', async () => {
+    const f = await setup('');
+    const picker = f.nativeElement.querySelector('.ql-picker') as HTMLElement;
+    expect(picker.hasAttribute('aria-label')).toBe(false);
+    const button = picker.querySelector('.ql-picker-label') as HTMLElement;
+    expect(button.getAttribute('role')).toBe('button');
+    expect(button.getAttribute('aria-label')).toBe('Nagłówek');
+  });
+
   it('drops disallowed formats (h1 clamped, colors, images, code) from emitted html', async () => {
     const f = await setup('');
     const quill = f.debugElement.query(By.directive(Editor)).componentInstance.getQuill();

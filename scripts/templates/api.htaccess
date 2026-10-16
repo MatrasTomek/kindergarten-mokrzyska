@@ -1,0 +1,27 @@
+Options -Indexes
+RewriteEngine On
+
+# API tylko po HTTPS (te same warunki co w /.htaccess). Bez przekierowania: POST z hasłem/tokenem
+# wysłany po HTTP i tak już przeszedł otwartym tekstem — odrzucamy go (403), żeby błąd był widoczny.
+RewriteCond %{HTTPS} !=on
+RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+RewriteRule ^ - [F]
+
+# Apache/CGI na OVH nie przekazuje nagłówka Authorization do PHP bez tej reguły
+# (po przepisaniu na index.php trafia jako REDIRECT_HTTP_AUTHORIZATION — obsługuje to App\Http\ServerParams)
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+# Publicznie dostępny jest tylko index.php: KAŻDE inne żądanie (także do istniejących plików
+# w src/, vendor/, bin/) trafia do front controllera, który odpowiada 404 dla nieznanych tras.
+RewriteRule ^index\.php$ - [L]
+RewriteRule ^ index.php [QSA,L]
+
+# Druga warstwa (działa przed przepisaniem): bezpośrednie wywołanie innego .php oraz pliki
+# z sekretami/konfiguracją → 403. Nie używaj tu FilesMatch ".*" — kontrola dostępu Apache
+# działa PRZED mod_rewrite, więc zablokowałaby też /api/health itp.
+<FilesMatch "(\.(php\d?|phtml|phar)|^\.env.*|^\.user\.ini|^composer\.(json|lock))$">
+  Require all denied
+</FilesMatch>
+<Files "index.php">
+  Require all granted
+</Files>

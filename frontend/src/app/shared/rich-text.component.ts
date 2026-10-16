@@ -72,6 +72,12 @@ export class RichTextComponent {
     root.setAttribute('role', 'textbox');
     root.setAttribute('aria-multiline', 'true');
     root.setAttribute('aria-labelledby', this.labelId);
+    // Quill kopiuje atrybuty <select> (w tym aria-label) na <span class="ql-picker"> bez roli (axe: aria-prohibited-attr),
+    // a przycisk rozwijający (role=button) zostaje bez nazwy (axe: aria-command-name) — przenosimy nazwę na przycisk.
+    root.parentElement?.parentElement?.querySelectorAll<HTMLElement>('.ql-picker[aria-label]').forEach((picker) => {
+      picker.querySelector('.ql-picker-label')?.setAttribute('aria-label', picker.getAttribute('aria-label')!);
+      picker.removeAttribute('aria-label');
+    });
     this.synced = this.value();
     this.apply(this.synced); // wartość ustawiona przed załadowaniem Quilla
   }

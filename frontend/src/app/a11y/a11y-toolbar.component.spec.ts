@@ -31,6 +31,12 @@ describe('A11yToolbarComponent', () => {
     expect(f.nativeElement.querySelector('[data-test=speak]')).not.toBeNull();
   });
 
+  it('font buttons with an aria-label include their visible text in the accessible name (WCAG 2.5.3)', () => {
+    const buttons: HTMLButtonElement[] = Array.from(render(true).nativeElement.querySelectorAll('button[aria-label]'));
+    const multiChar = buttons.filter((b) => (b.textContent ?? '').trim().length > 1);
+    expect(multiChar.map((b) => b.getAttribute('aria-label'))).toEqual(['A− Zmniejsz tekst', 'A+ Powiększ tekst']);
+  });
+
   it('hides read-aloud when unsupported', () => {
     expect(render(false).nativeElement.querySelector('[data-test=speak]')).toBeNull();
   });

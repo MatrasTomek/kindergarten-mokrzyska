@@ -1,0 +1,19 @@
+Options -Indexes
+
+# Jawne typy MIME: przy nagłówku nosniff (ustawianym w /.htaccess, dziedziczonym tutaj) plik
+# z nieznanym typem nie wyświetli się jako obrazek. Aplikacja zapisuje tylko .jpg, .webp i .pdf.
+# Bez skryptów: wyłączamy ewentualne handlery PHP/CGI przypisane po rozszerzeniu (AddHandler).
+# Celowo BEZ "php_flag engine off" (na OVH PHP działa jako FPM/CGI — to dałoby błąd 500)
+# i bez "Options -ExecCGI" (nie wiadomo, czy OVH zezwala na tę opcję w .htaccess).
+<IfModule mod_mime.c>
+  AddType image/jpeg .jpg .jpeg
+  AddType image/webp .webp
+  AddType application/pdf .pdf
+  RemoveHandler .php .php3 .php4 .php5 .php7 .php8 .phtml .phar .pl .py .cgi .sh
+</IfModule>
+
+# Domyślnie odmowa; serwowane są wyłącznie zdjęcia i PDF-y (wielkość liter bez znaczenia).
+Require all denied
+<FilesMatch "(?i)\.(jpe?g|webp|pdf)$">
+  Require all granted
+</FilesMatch>
