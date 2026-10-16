@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit bootstrap="vendor/autoload.php" colors="true">
+  <testsuites>
+    <testsuite name="all"><directory>tests</directory></testsuite>
+  </testsuites>
+  <php>
+    <env name="APP_ENV" value="test" force="true"/>
+    <env name="MONGO_URI" value="mongodb://mongo:27017" force="true"/>
+    <env name="MONGO_DB" value="przedszkole_test" force="true"/>
+    <env name="JWT_SECRET" value="test-secret-test-secret-test-secret-0123" force="true"/>
+  </php>
+</phpunit>

@@ -1,0 +1,14 @@
+services:
+  mongo:
+    image: mongo:7
+    ports: ["27017:27017"]
+    volumes: [mongo-data:/data/db]
+  php:
+    build: ./backend/docker
+    working_dir: /app/backend
+    volumes: [".:/app"]
+    ports: ["8080:8080"]
+    depends_on: [mongo]
+    command: php -S 0.0.0.0:8080 -t public public/index.php
+volumes:
+  mongo-data:
