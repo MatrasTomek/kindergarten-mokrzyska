@@ -10,4 +10,8 @@ describe('apiErrorMessage', () => {
     expect(apiErrorMessage(new HttpErrorResponse({ status: 0 }))).toBe('Brak połączenia z serwerem. Sprawdź internet i spróbuj ponownie.');
     expect(apiErrorMessage(new Error('x'))).toBe('Wystąpił błąd. Spróbuj ponownie.');
   });
+  it('maps 413 with a non-JSON body to a Polish message, but prefers the server message', () => {
+    expect(apiErrorMessage(new HttpErrorResponse({ status: 413, error: '<html>Too large</html>' }))).toBe('Plik jest za duży.');
+    expect(apiErrorMessage(new HttpErrorResponse({ status: 413, error: { error: { message: 'PDF max 10 MB' } } }))).toBe('PDF max 10 MB');
+  });
 });
