@@ -128,6 +128,9 @@ final class PostService
             if ($img['thumb'] !== preg_replace('/\.(webp|jpg)\z/', '_thumb.$1', $img['file'])) {
                 throw ApiException::validation('Miniatura nie pasuje do zdjęcia.');
             }
+            if (!$this->uploads->exists($img['file']) || !$this->uploads->exists($img['thumb'])) {
+                throw ApiException::validation('Zdjęcie wygasło — dodaj je ponownie.');
+            }
             $out[] = [
                 'file' => $img['file'],
                 'thumb' => $img['thumb'],

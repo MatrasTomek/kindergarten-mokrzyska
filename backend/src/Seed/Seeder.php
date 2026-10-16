@@ -60,6 +60,7 @@ final class Seeder
                     'name' => $admin['name'],
                     'role' => 'admin',
                     'active' => true,
+                    'passwordChangedAt' => Dates::now($this->clock),
                     'createdAt' => Dates::now($this->clock),
                 ]],
                 ['upsert' => true]

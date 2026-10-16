@@ -72,6 +72,11 @@ final class UploadService
         return preg_match('#^docs/' . self::UUID . '\.pdf\z#', $path) === 1;
     }
 
+    public function exists(string $relativePath): bool
+    {
+        return (preg_match('#^(docs|posts|content)/#', $relativePath) === 1) && is_file($this->absolute($relativePath));
+    }
+
     public function delete(string $relativePath): void
     {
         $valid = $this->isPdfPath($relativePath)

@@ -10,7 +10,7 @@ final class Ids
 {
     public static function parse(string $id): ObjectId
     {
-        if (!preg_match('/^[0-9a-f]{24}$/', $id)) {
+        if (!preg_match('/^[0-9a-f]{24}\z/', $id)) {
             throw ApiException::notFound();
         }
         return new ObjectId($id);

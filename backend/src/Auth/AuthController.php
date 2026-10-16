@@ -62,6 +62,11 @@ final class AuthController
         if ($user === null || !$user['active']) {
             throw ApiException::unauthorized();
         }
+        // Token wydany przed zmianą hasła jest unieważniony (porównanie co do sekundy: iat >= changedAt jest ważny).
+        $changedAt = $user['passwordChangedAt'] ?? null;
+        if ($changedAt instanceof \MongoDB\BSON\UTCDateTime && (int) ($claims['iat'] ?? 0) < intdiv((int) $changedAt->__toString(), 1000)) {
+            throw ApiException::unauthorized();
+        }
         return Json::write($res, ['accessToken' => $this->jwt->issueAccess((string) $user['_id'], $user['role']), 'user' => self::userPayload($user)]);
     }
 

@@ -40,6 +40,7 @@ abstract class ApiTestCase extends TestCase
 
     protected function tearDown(): void
     {
+        Fixtures::cleanup();
         $it = new \RecursiveIteratorIterator(
             new \RecursiveDirectoryIterator($this->uploadDir, \FilesystemIterator::SKIP_DOTS),
             \RecursiveIteratorIterator::CHILD_FIRST
@@ -80,6 +81,33 @@ abstract class ApiTestCase extends TestCase
             $req = $req->withUploadedFiles($files);
         }
         return $this->app->handle($req);
+    }
+
+    protected function createUser(
+        string $role = 'admin',
+        ?string $email = null,
+        string $password = 'haslo-testowe-123',
+        bool $active = true
+    ): string {
+        $email ??= $role . '-' . bin2hex(random_bytes(3)) . '@test.pl';
+        return (string) $this->db->collection('users')->insertOne([
+            'email' => $email,
+            'passwordHash' => password_hash($password, PASSWORD_DEFAULT),
+            'name' => ucfirst($role),
+            'role' => $role,
+            'active' => $active,
+            'createdAt' => \App\Support\Dates::now($this->clock),
+        ])->getInsertedId();
+    }
+
+    protected function tokenFor(string $userId, string $role): string
+    {
+        return (new \App\Auth\JwtService($this->config, $this->clock))->issueAccess($userId, $role);
+    }
+
+    protected function token(string $role = 'admin'): string
+    {
+        return $this->tokenFor($this->createUser($role), $role);
     }
 
     /** @return array<mixed> */

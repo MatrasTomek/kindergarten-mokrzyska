@@ -212,4 +212,28 @@ final class PostAdminTest extends ApiTestCase
         self::assertSame('Wpis 21', $page1['items'][0]['title']);
         self::assertCount(1, $this->json($this->request('GET', '/api/admin/posts?page=2', token: $t))['items']);
     }
+
+    public function testSavingImageDeletedByCleanupIsRejected(): void
+    {
+        $t = $this->token();
+        $img = $this->uploadedImage($t);
+        unlink($this->uploadDir . '/' . $img['file']);
+        $res = $this->request('POST', '/api/admin/posts', $this->input(['images' => [$img]]), $t);
+        self::assertSame(400, $res->getStatusCode());
+        self::assertSame('Zdjęcie wygasło — dodaj je ponownie.', $this->json($res)['error']['message']);
+        self::assertSame(0, $this->db->collection('posts')->countDocuments());
+    }
+
+    public function testMissingThumbOnUpdateIsRejectedAndNothingWritten(): void
+    {
+        $t = $this->token();
+        $img = $this->uploadedImage($t);
+        $post = $this->json($this->request('POST', '/api/admin/posts', $this->input(['images' => [$img]]), $t));
+        $new = $this->uploadedImage($t);
+        unlink($this->uploadDir . '/' . $new['thumb']);
+        $res = $this->request('PUT', "/api/admin/posts/{$post['id']}", $this->input(['title' => 'Zmiana', 'images' => [$img, $new]]), $t);
+        self::assertSame(400, $res->getStatusCode());
+        self::assertSame('Bal przebierańców', $this->json($this->request('GET', "/api/admin/posts/{$post['id']}", token: $t))['title']);
+        self::assertFileExists($this->uploadDir . '/' . $img['file']);
+    }
 }
