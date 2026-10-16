@@ -13,5 +13,6 @@ final class Routes
     public static function register(App $app, Services $s): void
     {
         $app->get('/api/health', fn (Request $q, Response $r) => Json::write($r, ['status' => 'ok']));
+        $app->get('/api/theme', [$s->themeController, 'active']);
     }
 }
