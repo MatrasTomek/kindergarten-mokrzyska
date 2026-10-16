@@ -2,3 +2,4 @@
 .env
 /public/uploads/
 .phpunit.cache/
+.phpunit.result.cache
