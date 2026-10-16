@@ -56,6 +56,10 @@ html.a11y-contrast body *:not(img):not(svg):not(video) {
   border-color: #ff0 !important;
   box-shadow: none !important;
 }
+html.a11y-contrast body [aria-pressed='true'] {
+  background-color: #ff0 !important;
+  color: #000 !important;
+}
 html.a11y-contrast a { color: #0ff !important; text-decoration: underline !important; }
 html.a11y-contrast :focus-visible { outline-color: #fff; }
 
