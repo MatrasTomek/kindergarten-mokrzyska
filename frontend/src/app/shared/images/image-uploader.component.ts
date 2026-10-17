@@ -103,6 +103,8 @@ export class ImageUploaderComponent {
   private readonly processors = { posts: createUploadProcessor('posts'), content: createUploadProcessor('content') };
   /** Pliki odrzucone jako nieobsługiwany format: ponowienie nie ma sensu. */
   private readonly unsupported = new WeakSet<File>();
+  /** Zdjęcie z kolejki (ścieżka pliku) → pozycja w kolejce (id rośnie w kolejności wybrania). */
+  private readonly queuePosition = new Map<string, number>();
 
   readonly queue = new UploadQueue(async (file, onProgress): Promise<UploadedImage> => {
     try {
@@ -114,9 +116,21 @@ export class ImageUploaderComponent {
   });
 
   constructor() {
-    this.queue.onDone = (item) => this.images.update((list) => [...list, { ...item.result, alt: this.defaultAlt() }]);
+    this.queue.onDone = (item) => this.insertInSelectionOrder(item.id, { ...item.result, alt: this.defaultAlt() });
     effect(() => this.busyChange.emit(this.queue.busy()));
     inject(DestroyRef).onDestroy(() => (this.queue.onDone = () => undefined));
+  }
+
+  /**
+   * Wysyłki kończą się w dowolnej kolejności (3 naraz, różne rozmiary); zdjęcie trafia przed pierwsze zdjęcie
+   * z kolejki wybrane później od niego — kolejność zostaje taka, jak przy wyborze. Zdjęcia zapisane wcześniej zostają na miejscu.
+   */
+  private insertInSelectionOrder(position: number, img: PostImage): void {
+    this.queuePosition.set(img.file, position);
+    this.images.update((list) => {
+      const at = list.findIndex((other) => (this.queuePosition.get(other.file) ?? -1) > position);
+      return at === -1 ? [...list, img] : [...list.slice(0, at), img, ...list.slice(at)];
+    });
   }
 
   protected canRetry(file: File): boolean {

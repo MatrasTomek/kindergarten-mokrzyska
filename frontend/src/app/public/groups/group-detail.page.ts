@@ -21,7 +21,7 @@ const is404 = (e: unknown): boolean => e instanceof HttpErrorResponse && e.statu
       } @else {
         <h1>{{ group()?.name ?? 'Grupa' }}</h1>
         @if (group()?.description) { <p>{{ group()!.description }}</p> }
-        <app-post-list [data]="posts()" [error]="error()" (pageChange)="page.set($event)" />
+        <app-post-list [data]="posts()" [error]="error()" [loading]="postsLoading()" (pageChange)="page.set($event)" />
         <p><a routerLink="/grupy">← Wszystkie grupy</a></p>
       }
     </div>
@@ -36,6 +36,9 @@ export class GroupDetailPage {
   protected readonly posts = signal<Paged<Post> | null>(null);
   protected readonly notFound = signal(false);
   protected readonly error = signal<string | null>(null);
+  protected readonly postsLoading = signal(false);
+  /** Grupa, której wpisy są teraz w `posts` — przy zmianie strony tej samej grupy nie czyścimy listy. */
+  private postsSlug: string | null = null;
 
   constructor() {
     effect((onCleanup) => {
@@ -65,11 +68,17 @@ export class GroupDetailPage {
     effect((onCleanup) => {
       const slug = this.slug();
       const page = this.page();
-      this.posts.set(null);
+      if (slug !== this.postsSlug) this.posts.set(null);
+      this.postsSlug = slug;
+      this.postsLoading.set(true);
       const sub = this.api.posts({ group: slug, page }).subscribe({
-        next: (p) => this.posts.set(p),
+        next: (p) => {
+          this.posts.set(p);
+          this.postsLoading.set(false);
+        },
         error: (e) => {
           if (!is404(e)) this.error.set(apiErrorMessage(e));
+          this.postsLoading.set(false);
         },
       });
       onCleanup(() => sub.unsubscribe());

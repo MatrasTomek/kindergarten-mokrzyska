@@ -74,4 +74,15 @@ describe('A11yToolbarComponent', () => {
     expect(check.textContent).toContain('✓');
     expect(check.getAttribute('aria-hidden')).toBe('true');
   });
+
+  it('is sticky only on roomy viewports: static below 48rem width or 30rem height (phones, browser zoom)', () => {
+    const f = render(true);
+    const host = [...(f.nativeElement as HTMLElement).attributes].find((a) => a.name.startsWith('_nghost'))!.name;
+    const rules = [...document.styleSheets].flatMap((s) => [...s.cssRules]);
+    const base = rules.find((r): r is CSSStyleRule => r instanceof CSSStyleRule && r.selectorText === `[${host}]`)!;
+    expect(base.style.position).toBe('sticky');
+    const media = rules.find((r): r is CSSMediaRule => r instanceof CSSMediaRule && [...r.cssRules].some((c) => (c as CSSStyleRule).selectorText === `[${host}]`))!;
+    expect(media.media.mediaText.replace(/\s+/g, '')).toBe('(max-width:48rem),(max-height:30rem)');
+    expect(([...media.cssRules][0] as CSSStyleRule).style.position).toBe('static');
+  });
 });

@@ -28,7 +28,7 @@ Paczkę `deploy/` buduje się lokalnie; jej zawartość odpowiada 1:1 katalogowi
   cudzysłowy). W PowerShellu używaj `curl.exe` zamiast `curl` (samo `curl` to tam alias `Invoke-WebRequest`
   z inną składnią), np. `curl.exe -I https://<domena>/aktualnosci`.
 - Wersje są celowo przypięte: **Angular 21 + PrimeNG 21.1.10**. PrimeNG 22+ wymaga klucza licencyjnego PrimeUI,
-  a podniesienie Angulara do 22 pociąga za sobą PrimeNG 22 — nie aktualizuj „przy okazji”.
+  a podniesienie Angulara do 22 pociąga za sobą PrimeNG 22 — nie aktualizuj „przy okazji” (patrz *Wersje i wsparcie*).
 
 ## Budowa paczki
 
@@ -40,7 +40,8 @@ Skrypt: buduje front (prerender), kopiuje backend (`src/`, `bin/`, `index.php`, 
 `vendor/` bez paczek deweloperskich, dodaje `.htaccess`, `api/.user.ini`, `uploads/.htaccess`, `.ovhconfig`, ustawia prawa
 plików (644/755), usuwa z `vendor/` testy i dokumentację paczek (~6 MB mniej do wgrania) i na końcu uruchamia
 **smoke check** (`scripts/verify-package.mjs`). Jeśli którekolwiek sprawdzenie nie przejdzie (brak `index.csr.html`,
-prerenderu tras, `vendor/`, kluczowych reguł w `api/.htaccess` i `uploads/.htaccess`, obecność `admin/`, **dowolnego
+prerenderu tras, `vendor/`, kluczowych reguł w `/.htaccess` (fallback SPA, 404 dla brakujących plików statycznych),
+`api/.htaccess` i `uploads/.htaccess`, obecność `admin/`, **dowolnego
 pliku `.env`**, `.git`, `node_modules`, plików Dockera lub katalogów `tests`), skrypt kończy się błędem — takiej paczki nie wgrywaj. Sprawdzenie można powtórzyć ręcznie:
 `node scripts/verify-package.mjs`. Testy skryptu: `node --test scripts/verify-package.test.mjs`.
 
@@ -136,7 +137,11 @@ deploy/
 2. W FileZilli wgraj zawartość `deploy/` do `/<folder>` z nadpisaniem.
    - **Nie nadpisuj/nie usuwaj**: `api/.env`, zawartości `uploads/` (paczka zawiera tylko `uploads/.htaccess`).
    - Po zmianie `composer.lock` wgraj `api/vendor/` w całości.
-   - Stare pliki JS/CSS (z hashem w nazwie) w `/<folder>` można usunąć ręcznie — nie przeszkadzają.
+   - **Starych plików JS/CSS (z hashem w nazwie, np. `chunk-AB12CD34.js`) nie usuwaj od razu.** Karty przeglądarki
+     otwarte przed aktualizacją (np. panel z rozpoczętym wpisem) dociągają je przy przejściu na kolejną podstronę.
+     Po **kilku dniach (np. tydzień)** możesz usunąć z `/<folder>` pliki `.js`/`.css`, których nie ma w nowym `deploy/`
+     (porównaj listy w FileZilli; nie ruszaj `api/`, `uploads/`, `media/`, plików `.htaccess`/`.ovhconfig`/`.html`).
+     Brakujący plik zwraca 404 (nie stronę HTML) — taka stara karta zgłosi błąd ładowania; wystarczy ją odświeżyć (F5).
 3. **Seed ponownie**, jeśli wydanie dodaje indeksy lub nowe dane startowe (w razie wątpliwości uruchom — jest idempotentny),
    tak samo jak w kroku 8 (z `--env-file=.env.prod`, bez `--fresh`; parametry admina można pominąć).
 4. Przejdź listę kontrolną (co najmniej punkty 1–6 i 8).
@@ -153,7 +158,8 @@ deploy/
    - `curl -I https://<domena>/aktualnosci` → `200` **bez** przekierowania na `/aktualnosci/` (prerenderowany
      `aktualnosci/index.html`); `/aktualnosci/` też `200`,
    - `https://<domena>/wpis/cokolwiek` i `/admin` → `200` z powłoką SPA (`index.csr.html`; w źródle strony brak `ngh=`),
-     `https://<domena>/` → prerenderowana strona główna.
+     `https://<domena>/` → prerenderowana strona główna,
+   - `curl -I https://<domena>/nie-ma-takiego-pliku.js` → `404` (brakujące pliki statyczne nie dostają powłoki SPA).
    Jeśli `curl -I https://…` zwraca 301 na samego siebie (pętla), proxy OVH nie przekazuje do Apache informacji o HTTPS.
    Wtedy zakomentuj (`#` na początku linii) **w obu plikach** trzy linie reguły HTTPS (`RewriteCond %{HTTPS} …`,
    `RewriteCond %{HTTP:X-Forwarded-Proto} …` i następującą po nich `RewriteRule`):
@@ -215,5 +221,24 @@ Trasy renderowane w przeglądarce (`/wpis/*`, `/grupy/*`, `/admin/*`) i nieznane
 (pusta powłoka aplikacji). **Nigdy `index.html`** — to prerenderowana strona główna ze znacznikami hydratacji; podana pod
 innym adresem psułaby hydratację. Prerenderowane trasy to katalogi (`aktualnosci/index.html`); `/.htaccess` ma
 `DirectorySlash Off` i wewnętrznie serwuje `<trasa>/index.html` zarówno dla `/aktualnosci`, jak i `/aktualnosci/`,
-bez przekierowań. `/api/*` i `/uploads/*` są wyłączone z fallbacku. Skrypt paczki przerywa pracę, jeśli w buildzie
-nie ma `index.csr.html`.
+bez przekierowań. `/api/*` i `/uploads/*` są wyłączone z fallbacku. Brakujące pliki statyczne (`.js`, `.css`, `.map`,
+czcionki, obrazki, `.json`) dostają **404**, a nie `index.csr.html` — inaczej stara karta po aktualizacji dostałaby HTML
+zamiast skryptu. Skrypt paczki przerywa pracę, jeśli w buildzie nie ma `index.csr.html`.
+
+## Wersje i wsparcie
+
+- **Angular 21** to poprzednia główna wersja. Wsparcie LTS (poprawki bezpieczeństwa) potrwa **orientacyjnie do maja 2027**
+  (18 miesięcy od premiery w listopadzie 2025). Dokładną datę sprawdzisz na <https://angular.dev/reference/releases>
+  (tabela *Actively supported versions*); `cd frontend && npm ls @angular/core` pokazuje zainstalowaną wersję.
+- **PrimeNG 21.1.10** to ostatnie wydanie na licencji MIT bez klucza — kolejnych poprawek dla linii 21 nie będzie.
+  To samo dotyczy `primeicons` 7.0.0 i `@primeuix/themes` 2.0.3.
+- **Plan wyjścia** (przed końcem LTS Angulara 21, albo wcześniej, jeśli w PrimeNG 21 wyjdzie istotny błąd):
+  1. uzyskać klucz licencji PrimeUI *Community* (warunki i to, czy przedszkole się kwalifikuje, sprawdź na stronie PrimeUI)
+     i przejść na Angular 22+ z PrimeNG 22+ (klucz konfiguruje się w aplikacji; bez niego PrimeNG 22 pokazuje baner licencji), albo
+  2. zastąpić PrimeNG inną biblioteką komponentów (np. Angular Material/CDK) — używane są: Button, Dialog,
+     ConfirmDialog, Toast, Message, Tag, pola formularzy (InputText, Textarea, Password, InputNumber, Select, MultiSelect,
+     Checkbox, RadioButton), Paginator, Galleria, Editor (Quill), ProgressBar.
+- **`npm audit`**: alarmy dla `vitest`/`@vitest/mocker` dotyczą tylko narzędzia testowego (nie trafia do paczki `deploy/`).
+  Naprawa wymaga vitest ≥ 4.1.11, którego instalacja wywraca npm 10.9.9 — podnieś vitest po przejściu na npm 11.
+  Alarm „low” dla `quill` 2.0.3 (XSS w eksporcie HTML) jest łagodzony po stronie serwera: backend czyści HTML wpisów
+  i treści (`HtmlSanitizer`) przed zapisem.

@@ -8,6 +8,8 @@ test('home shows 10 tiles and every tile opens a page', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('link', { name }).click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(name);
+    // Po zmianie trasy fokus trafia do <main> (czytnik ekranu nie zostaje na usuniętym kafelku / <body>).
+    await expect(page.locator('main#main')).toBeFocused();
   }
 });
 

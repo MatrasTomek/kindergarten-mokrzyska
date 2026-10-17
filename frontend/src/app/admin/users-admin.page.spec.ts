@@ -39,7 +39,8 @@ describe('UsersAdminPage', () => {
     const buttons = f.nativeElement.querySelectorAll('[data-test=delete] button');
     expect(buttons[0].disabled).toBe(true);
     expect(buttons[1].disabled).toBe(false);
-    expect(f.nativeElement.textContent).toContain('Wpisy „Z życia”');
+    expect(f.nativeElement.textContent).toContain('Użytkownik — tylko wpisy');
+    expect(f.nativeElement.textContent).not.toContain('Z życia');
   });
 
   it('shows load error with alert and retries', () => {

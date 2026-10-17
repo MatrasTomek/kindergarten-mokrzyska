@@ -93,3 +93,48 @@ test('no violations in high-contrast mode', async ({ page }) => {
   await expect(page.locator('html')).toHaveClass(/a11y-contrast/);
   expect(await audit(page)).toEqual([]);
 });
+
+test('the accessibility toolbar is sticky on desktop but not on a phone (it would cover the page at 125/150%)', async ({ page }) => {
+  const position = () => page.locator('app-a11y-toolbar').evaluate((e) => getComputedStyle(e).position);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto('/');
+  await expectRendered(page, /^Publiczne Przedszkole Parafialne w Mokrzyskach/);
+  expect(await position()).toBe('sticky');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole('button', { name: 'Powiększ tekst' }).click();
+  expect(await position()).toBe('static');
+});
+
+test('post editor: admin has the a11y toolbar, Quill icons stay visible in high contrast, link tooltip is Polish', async ({ page }) => {
+  await login(page, ADMIN);
+  await page.goto('/admin/wpisy/nowy');
+  await expectRendered(page, 'Nowy wpis');
+  const contrast = page.getByRole('button', { name: 'Wysoki kontrast' });
+  await contrast.click();
+  await expect(page.locator('html')).toHaveClass(/a11y-contrast/);
+  expect(await page.locator('.ql-bold .ql-stroke').first().evaluate((e) => getComputedStyle(e).stroke)).toBe('rgb(255, 255, 0)');
+  expect(await audit(page)).toEqual([]);
+
+  const pseudo = (selector: string, which: '::before' | '::after') =>
+    page.locator(selector).evaluate((e, w) => getComputedStyle(e, w).content, which);
+  await page.locator('.ql-editor').click();
+  await page.keyboard.type('Strona parafii');
+  await page.keyboard.press('ControlOrMeta+a');
+  await page.getByRole('button', { name: 'Link', exact: true }).click();
+  const tooltip = page.locator('.ql-tooltip');
+  await expect(tooltip).toBeVisible();
+  expect(await pseudo('.ql-tooltip', '::before')).toBe('"Wpisz adres:"');
+  expect(await pseudo('.ql-tooltip a.ql-action', '::after')).toBe('"Zapisz"');
+  await expect(tooltip.getByRole('textbox', { name: 'Adres linku' })).toHaveAttribute('placeholder', 'https://');
+  await tooltip.getByRole('textbox', { name: 'Adres linku' }).fill('https://example.com');
+  await page.keyboard.press('Enter');
+  await page.locator('.ql-editor a').click();
+  await expect(tooltip).toBeVisible();
+  expect(await pseudo('.ql-tooltip', '::before')).toBe('"Otwórz link:"');
+  expect(await pseudo('.ql-tooltip a.ql-action', '::after')).toBe('"Edytuj"');
+  expect(await pseudo('.ql-tooltip a.ql-remove', '::before')).toBe('"Usuń"');
+
+  // Ustawienia z części publicznej da się w panelu wyłączyć.
+  await contrast.click();
+  await expect(page.locator('html')).not.toHaveClass(/a11y-contrast/);
+});

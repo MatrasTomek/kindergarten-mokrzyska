@@ -66,4 +66,26 @@ describe('Groups pages', () => {
     f.detectChanges();
     expect(f.nativeElement.querySelector('h1').textContent).toBe('Pingwinki');
   });
+
+  it('keeps the posts of the group visible while the next page loads', () => {
+    const f = TestBed.createComponent(GroupDetailPage);
+    f.componentRef.setInput('slug', 'pingwinki');
+    f.detectChanges();
+    TestBed.tick();
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne('/api/groups/pingwinki').flush({ id: '1', name: 'Pingwinki', slug: 'pingwinki', order: 1, description: '' });
+    const items = Array.from({ length: 12 }, (_, i) => ({
+      id: `${i}`, title: `Wpis ${i}`, slug: `wpis-${i}`, excerpt: '', body: '', status: 'published',
+      publishedAt: null, targets: { news: false, groupIds: ['1'] }, images: [],
+    }));
+    http.expectOne('/api/posts?page=1&group=pingwinki').flush({ items, page: 1, pages: 2, total: 13 });
+    f.detectChanges();
+    (f.nativeElement.querySelector('.p-paginator-next') as HTMLButtonElement).click();
+    f.detectChanges();
+    TestBed.tick();
+    http.expectOne('/api/posts?page=2&group=pingwinki');
+    f.detectChanges();
+    expect(f.nativeElement.querySelectorAll('article')).toHaveLength(12);
+    expect(f.nativeElement.querySelector('[role=status]').textContent).toContain('Ładowanie…');
+  });
 });

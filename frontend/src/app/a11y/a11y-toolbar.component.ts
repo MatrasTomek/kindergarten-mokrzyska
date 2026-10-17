@@ -37,6 +37,9 @@ import { SpeechService } from './speech.service';
   `,
   styles: `
     :host { position: sticky; top: 0; z-index: 1000; display: block; background: var(--app-primary-900); }
+    /* Na telefonie (i przy powiększeniu przeglądarki — media query w rem/px reaguje na zoom) zawinięty pasek
+       przyklejony u góry zasłaniałby dużą część ekranu, szczególnie przy tekście 125/150%: tam przewija się ze stroną. */
+    @media (max-width: 48rem), (max-height: 30rem) { :host { position: static; } }
     .bar { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; justify-content: flex-end; max-width: 72rem; margin: 0 auto; padding: .375rem 1rem; }
     .group { display: flex; gap: .25rem; }
     button, a { font: inherit; font-size: .875rem; color: #fff; background: transparent; border: 1px solid rgba(255,255,255,.6); border-radius: .375rem; padding: .25rem .625rem; cursor: pointer; text-decoration: none; display: inline-flex; gap: .375rem; align-items: center; }

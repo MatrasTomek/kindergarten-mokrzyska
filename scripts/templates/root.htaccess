@@ -29,6 +29,10 @@ RewriteRule ^(.+?)/?$ $1/index.html [L]
 RewriteCond %{REQUEST_FILENAME} -f
 RewriteRule ^ - [L]
 
+# Brakujące pliki statyczne → 404, NIE powłoka SPA. Np. stara karta przeglądarki po aktualizacji prosi o usunięty
+# chunk JS: HTML zamiast skryptu (przy nosniff) psułby stronę po cichu, a 404 Angular zgłasza jako błąd ładowania.
+RewriteRule \.(js|css|map|woff2?|png|jpe?g|webp|svg|ico|json)$ - [NC,R=404,L]
+
 # Trasy renderowane w przeglądarce: /wpis/*, /grupy/*, /admin/* i nieznane adresy (404 robi Angular).
 # ZAWSZE index.csr.html — index.html to prerenderowana strona główna ze znacznikami hydratacji.
 RewriteRule ^ /__FALLBACK__ [L]

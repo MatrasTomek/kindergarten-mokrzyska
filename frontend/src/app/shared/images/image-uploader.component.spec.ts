@@ -134,4 +134,50 @@ describe('ImageUploaderComponent', () => {
     expect(f.componentInstance.images()).toHaveLength(30);
     expect(f.nativeElement.querySelector('[data-test=retry]')).toBeNull();
   });
+
+  it('adds photos in the order they were selected, even when uploads finish out of order', async () => {
+    const release = new Map<string, () => void>();
+    const names = new WeakMap<Blob, string>();
+    TestBed.configureTestingModule({
+      imports: [ImageUploaderComponent],
+      providers: [
+        providePrimeNG(),
+        {
+          provide: ImageResizer,
+          useValue: {
+            resize: (f: File) =>
+              new Promise((resolve) => {
+                const image = new Blob(['i'], { type: 'image/webp' });
+                names.set(image, f.name.replace('.jpg', ''));
+                release.set(f.name, () => resolve({ image, thumb: new Blob(['t'], { type: 'image/webp' }) }));
+              }),
+          },
+        },
+        {
+          provide: AdminApi,
+          useValue: {
+            uploadImage: (image: Blob) => {
+              const n = names.get(image)!;
+              return of(new HttpResponse({ body: { file: `posts/${n}.webp`, thumb: `posts/${n}_t.webp`, w: 1, h: 1 } }));
+            },
+          },
+        },
+      ],
+    });
+    const f = TestBed.createComponent(ImageUploaderComponent);
+    f.componentRef.setInput('images', saved(1));
+    f.componentRef.setInput('context', 'posts');
+    f.detectChanges();
+    f.componentInstance.addFiles(['a', 'b', 'c', 'd'].map((n) => new File([n], `${n}.jpg`, { type: 'image/jpeg' })));
+    const finish = async (name: string) => {
+      release.get(`${name}.jpg`)!();
+      await flush(); await flush();
+    };
+    await flush();
+    await finish('c'); // c kończy pierwsze, d startuje na zwolnionym miejscu
+    await finish('d');
+    await finish('a');
+    await finish('b');
+    expect(f.componentInstance.images().map((i) => i.file)).toEqual(['posts/0.webp', 'posts/a.webp', 'posts/b.webp', 'posts/c.webp', 'posts/d.webp']);
+  });
 });

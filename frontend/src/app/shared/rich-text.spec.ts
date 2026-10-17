@@ -151,4 +151,41 @@ describe('RichTextComponent', () => {
     expect(editorHtml(f)).not.toContain('Stary');
     expect(f.componentInstance.value()).toBe('');
   });
+
+  // Build zapisuje znaki spoza ASCII jako escape CSS („Otw\\f3rz”) — dekodujemy jak przeglądarka.
+  const componentCss = () =>
+    [...document.querySelectorAll('style')]
+      .map((s) => s.textContent ?? '')
+      .join('\n')
+      .replace(/\\([0-9a-f]{1,6}) ?/gi, (_, hex: string) => String.fromCodePoint(parseInt(hex, 16)))
+      .replace(/\s+/g, ' ');
+
+  it('translates the Quill link tooltip into Polish (CSS content overrides scoped to the component)', async () => {
+    await setup('');
+    const css = componentCss();
+    for (const [selector, text] of [
+      [/\.ql-tooltip::before \{ content: ?"Otwórz link:"/, 'preview label'],
+      [/\.ql-tooltip\[data-mode="?link"?\]::before \{ content: ?"Wpisz adres:"/, 'edit label'],
+      [/a\.ql-action::after \{ content: ?"Edytuj"/, 'edit action'],
+      [/\.ql-editing a\.ql-action::after \{ content: ?"Zapisz"/, 'save action'],
+      [/a\.ql-remove::before \{ content: ?"Usuń"/, 'remove action'],
+    ] as const) {
+      expect(css, text).toMatch(selector);
+    }
+    expect(css).toMatch(/\[_nghost-[\w-]+\] \.ql-snow \.ql-tooltip/); // tylko w tym komponencie
+  });
+
+  it('gives the link input a Polish name and an example address as placeholder', async () => {
+    const f = await setup('');
+    const input = f.nativeElement.querySelector('.ql-tooltip input[type=text]') as HTMLInputElement;
+    expect(input.getAttribute('data-link')).toBe('https://');
+    expect(input.getAttribute('aria-label')).toBe('Adres linku');
+  });
+
+  it('keeps Quill toolbar icons visible in high-contrast mode (stroke/fill overrides)', async () => {
+    await setup('');
+    const css = componentCss();
+    expect(css).toMatch(/\.a11y-contrast[^{]*\.ql-stroke[^{]*\{ stroke: ?#ff0 ?!important/);
+    expect(css).toMatch(/\.a11y-contrast[^{]*\.ql-fill[^{]*\{ fill: ?#ff0 ?!important/);
+  });
 });

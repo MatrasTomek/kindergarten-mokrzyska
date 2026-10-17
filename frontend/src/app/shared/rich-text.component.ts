@@ -45,7 +45,22 @@ interface QuillLike {
       </ng-template>
     </p-editor>
   `,
-  styles: `.label { display: block; font-weight: 600; margin-bottom: .25rem; }`,
+  styles: `
+    .label { display: block; font-weight: 600; margin-bottom: .25rem; }
+    /* Dymek linku Quilla po polsku (teksty Quilla/PrimeNG są w CSS „content”; tylko w tym komponencie). */
+    :host ::ng-deep .ql-snow .ql-tooltip::before { content: "Otwórz link:"; }
+    :host ::ng-deep .ql-snow .ql-tooltip[data-mode="link"]::before { content: "Wpisz adres:"; }
+    :host ::ng-deep .ql-snow .ql-tooltip a.ql-action::after { content: "Edytuj"; }
+    :host ::ng-deep .ql-snow .ql-tooltip.ql-editing a.ql-action::after { content: "Zapisz"; }
+    :host ::ng-deep .ql-snow .ql-tooltip a.ql-remove::before { content: "Usuń"; }
+    /* Wysoki kontrast (html.a11y-contrast, także w panelu): ikony paska Quilla są SVG z kreską #444 — na czarnym tle
+       niewidoczne. Żółte jak reszta trybu; aktywny format (np. pogrubienie) turkusowy, bo tło przycisku jest wtedy czarne. */
+    :host-context(.a11y-contrast) ::ng-deep .ql-snow .ql-stroke { stroke: #ff0 !important; }
+    :host-context(.a11y-contrast) ::ng-deep .ql-snow .ql-stroke-miter { stroke: #ff0 !important; }
+    :host-context(.a11y-contrast) ::ng-deep .ql-snow .ql-fill { fill: #ff0 !important; }
+    :host-context(.a11y-contrast) ::ng-deep .ql-snow .ql-active .ql-stroke { stroke: #0ff !important; }
+    :host-context(.a11y-contrast) ::ng-deep .ql-snow .ql-active .ql-fill { fill: #0ff !important; }
+  `,
 })
 export class RichTextComponent {
   private static seq = 0;
@@ -78,6 +93,10 @@ export class RichTextComponent {
       picker.querySelector('.ql-picker-label')?.setAttribute('aria-label', picker.getAttribute('aria-label')!);
       picker.removeAttribute('aria-label');
     });
+    // Pole adresu w dymku linku: nazwa dla czytnika i podpowiedź zamiast „https://quilljs.com” (Quill bierze placeholder z data-link).
+    const linkInput = root.parentElement?.querySelector<HTMLInputElement>('.ql-tooltip input[type=text]');
+    linkInput?.setAttribute('data-link', 'https://');
+    linkInput?.setAttribute('aria-label', 'Adres linku');
     this.synced = this.value();
     this.apply(this.synced); // wartość ustawiona przed załadowaniem Quilla
   }

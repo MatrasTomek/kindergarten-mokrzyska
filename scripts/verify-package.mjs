@@ -71,6 +71,19 @@ function uploadsHtaccessOk(text) {
   );
 }
 
+/** Rozszerzenia, dla których brakujący plik ma dać 404 (stare chunki po aktualizacji), a nie index.csr.html. */
+export const STATIC_EXTENSIONS = ['js', 'css', 'map', 'woff2', 'png', 'jpg', 'webp', 'svg', 'ico', 'json'];
+
+/** /.htaccess: reguła `RewriteRule <wzorzec> - [...R=404...]` obejmuje wszystkie rozszerzenia i stoi przed fallbackiem SPA. */
+function staticAssets404Ok(text) {
+  const lines = text.split(/\r?\n/).map((l) => l.trim());
+  const fallback = lines.findIndex((l) => /^RewriteRule \^ \//.test(l));
+  const rule = lines.findIndex((l) => /^RewriteRule \S+ - \[[^\]]*\bR=404\b[^\]]*\]$/.test(l));
+  if (rule === -1 || fallback === -1 || rule > fallback) return false;
+  const pattern = new RegExp(lines[rule].split(/\s+/)[1], /\bNC\b/.test(lines[rule]) ? 'i' : '');
+  return STATIC_EXTENSIONS.every((ext) => pattern.test(`/stary-chunk-ABC123.${ext}`)) && !pattern.test('/wpis/jesienny-spacer');
+}
+
 /** @returns {{check: string, ok: boolean, detail?: string}[]} */
 export function verifyPackage(dir) {
   const has = (p) => existsSync(join(dir, p));
@@ -86,6 +99,10 @@ export function verifyPackage(dir) {
   check(
     '.htaccess: fallback SPA na /index.csr.html',
     /^\s*RewriteRule \^ \/index\.csr\.html \[L\]/m.test(htaccess) && !/RewriteRule \^ \/index\.html\b/.test(htaccess),
+  );
+  check(
+    '.htaccess: brakujące pliki statyczne (js, css, map, czcionki, obrazki, json) → 404, nie fallback SPA',
+    staticAssets404Ok(htaccess),
   );
   check('.ovhconfig: PHP 8.4', /^app\.engine\.version=8\.4\s*$/m.test(read(join(dir, '.ovhconfig'))));
 

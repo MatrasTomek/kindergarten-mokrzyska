@@ -5,14 +5,17 @@ import { ConfirmationService, MessageService } from 'primeng/api';
 import { Button } from 'primeng/button';
 import { ConfirmDialog } from 'primeng/confirmdialog';
 import { Toast } from 'primeng/toast';
+import { A11yToolbarComponent } from '../a11y/a11y-toolbar.component';
 import { AuthService } from '../core/auth/auth.service';
 
 @Component({
   selector: 'app-admin-layout',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, Button, Toast, ConfirmDialog],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, Button, Toast, ConfirmDialog, A11yToolbarComponent],
   providers: [MessageService, ConfirmationService],
   template: `
     <a class="skip-link" href="#main" (click)="skipToMain($event)">Przejdź do treści</a>
+    <!-- Ustawienia z części publicznej (localStorage + skrypt pre-paint) obowiązują i tutaj — muszą dać się zmienić. -->
+    <app-a11y-toolbar />
     <header class="top">
       <a routerLink="/" class="home">← Strona</a>
       <strong>Panel administracyjny</strong>
@@ -58,8 +61,12 @@ export class AdminLayoutComponent {
     this.doc.getElementById('main')?.focus();
   }
 
+  /**
+   * Najpierw opuszczamy stronę (strażnik niezapisanych zmian może zapytać), dopiero potem kasujemy sesję:
+   * „Zostań” w oknie pytania = nadal zalogowany, edycja i zapis działają.
+   */
   protected async logout(): Promise<void> {
+    if (!(await this.router.navigate(['/admin/logowanie']))) return;
     await this.auth.logout().catch(() => undefined);
-    await this.router.navigate(['/admin/logowanie']);
   }
 }

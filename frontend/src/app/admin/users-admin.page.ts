@@ -14,7 +14,7 @@ import { focusAfterConfirm } from '../shared/focus-after-confirm';
 
 const ROLES = [
   { value: 'admin' as Role, label: 'Administrator — wszystko' },
-  { value: 'user' as Role, label: 'Użytkownik — Wpisy „Z życia”' },
+  { value: 'user' as Role, label: 'Użytkownik — tylko wpisy' },
 ];
 const MIN_PASSWORD = 10;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

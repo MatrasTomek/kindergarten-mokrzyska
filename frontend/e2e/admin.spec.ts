@@ -110,6 +110,16 @@ test('opening an existing post and leaving without changes does not ask about un
   await page.getByLabel('Tytuł *').fill(`${title} (zmieniony)`);
   await page.getByRole('link', { name: 'Anuluj' }).click();
   await expect(page.getByRole('alertdialog', { name: 'Niezapisane zmiany' })).toBeVisible();
+  await page.getByRole('button', { name: 'Zostań' }).click();
+
+  // Wylogowanie też pyta, a „Zostań” zostawia sesję (zapis nadal działa).
+  await page.getByRole('button', { name: 'Wyloguj' }).click();
+  await expect(page.getByRole('alertdialog', { name: 'Niezapisane zmiany' })).toBeVisible();
+  await page.getByRole('button', { name: 'Zostań' }).click();
+  await expect(page).toHaveURL(new RegExp(`/admin/wpisy/${post.id}$`));
+  await page.getByRole('button', { name: 'Zapisz' }).click();
+  await page.waitForURL('**/admin/wpisy');
+  await expect(page.getByRole('row', { name: new RegExp(`${title} \\(zmieniony\\)`) })).toBeVisible();
 });
 
 test('deleting a group: cancel returns focus to the button, confirm moves focus to the heading', async ({ page, request }) => {

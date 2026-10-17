@@ -6,7 +6,9 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { PRERENDERED_ROUTES, verifyPackage } from './verify-package.mjs';
 
-const ROOT_HTACCESS = 'RewriteEngine On\nRewriteRule ^ /index.csr.html [L]\n';
+const ASSETS_404 = 'RewriteRule \\.(js|css|map|woff2?|png|jpe?g|webp|svg|ico|json)$ - [NC,R=404,L]';
+const ROOT_HTACCESS = `RewriteEngine On\nRewriteCond %{REQUEST_FILENAME} -f\nRewriteRule ^ - [L]\n${ASSETS_404}\nRewriteRule ^ /index.csr.html [L]\n`;
+const ASSETS_CHECK = '.htaccess: brakujące pliki statyczne (js, css, map, czcionki, obrazki, json) → 404, nie fallback SPA';
 const API_HTACCESS = [
   'RewriteCond %{HTTPS} !=on',
   'RewriteCond %{HTTP:X-Forwarded-Proto} !=https',
@@ -81,8 +83,11 @@ const cases = [
   ['brak prerenderu trasy', { 'aktualnosci/index.html': null }, 'aktualnosci/index.html'],
   ['prerender panelu admina', { 'admin/index.html': '<html>' }, 'brak admin/'],
   ['prerender trasy wpisu', { 'wpis/x/index.html': '<html>' }, 'brak wpis/'],
-  ['fallback na index.html', { '.htaccess': 'RewriteRule ^ /index.html [L]\n' }, '.htaccess: fallback SPA na /index.csr.html'],
-  ['brak .htaccess', { '.htaccess': null }, '.htaccess: fallback SPA na /index.csr.html'],
+  ['fallback na index.html', { '.htaccess': ROOT_HTACCESS.replace('/index.csr.html', '/index.html') }, '.htaccess: fallback SPA na /index.csr.html'],
+  ['brak .htaccess', { '.htaccess': null }, '.htaccess: fallback SPA na /index.csr.html', ASSETS_CHECK],
+  ['brak reguły 404 dla plików statycznych', { '.htaccess': ROOT_HTACCESS.replace(`${ASSETS_404}\n`, '') }, ASSETS_CHECK],
+  ['reguła 404 bez .map', { '.htaccess': ROOT_HTACCESS.replace('|map', '') }, ASSETS_CHECK],
+  ['reguła 404 po fallbacku SPA (nigdy nie zadziała)', { '.htaccess': ROOT_HTACCESS.replace(`${ASSETS_404}\n`, '') + `${ASSETS_404}\n` }, ASSETS_CHECK],
   ['.ovhconfig z PHP 7.4', { '.ovhconfig': 'app.engine.version=7.4\n' }, '.ovhconfig: PHP 8.4'],
   ['brak api/index.php', { 'api/index.php': null }, 'api/index.php'],
   ['brak vendor', { 'api/vendor/autoload.php': null }, 'api/vendor/autoload.php'],
@@ -109,9 +114,9 @@ const cases = [
   ['.env w katalogu głównym', { '.env': 'x' }, 'brak plików .env'],
 ];
 
-for (const [name, overrides, expected] of cases) {
+for (const [name, overrides, ...expected] of cases) {
   test(`wykrywa: ${name}`, () => {
-    assert.deepEqual(failuresFor(overrides), [expected]);
+    assert.deepEqual(failuresFor(overrides), expected);
   });
 }
 

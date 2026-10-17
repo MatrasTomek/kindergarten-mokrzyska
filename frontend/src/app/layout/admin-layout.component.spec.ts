@@ -42,12 +42,32 @@ describe('AdminLayoutComponent', () => {
     expect(links[0].textContent).toContain('Wpisy');
   });
 
-  it('logout calls auth.logout and navigates to login', async () => {
+  const logoutButton = (el: HTMLElement) =>
+    [...el.querySelectorAll('header button')].find((b) => b.textContent?.includes('Wyloguj')) as HTMLButtonElement;
+
+  it('logout leaves the page first (unsaved-changes guard), then calls auth.logout', async () => {
     const el = render(true);
     const nav = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
-    (el.querySelector('header button') as HTMLButtonElement).click();
+    logoutButton(el).click();
     await new Promise((r) => setTimeout(r));
-    expect(logout).toHaveBeenCalled();
     expect(nav).toHaveBeenCalledWith(['/admin/logowanie']);
+    expect(logout).toHaveBeenCalled();
+    expect(nav.mock.invocationCallOrder[0]).toBeLessThan(logout.mock.invocationCallOrder[0]);
+  });
+
+  it('stays logged in when the user chooses „Zostań” in the unsaved-changes dialog', async () => {
+    const el = render(true);
+    const nav = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(false);
+    logoutButton(el).click();
+    await new Promise((r) => setTimeout(r));
+    expect(nav).toHaveBeenCalledWith(['/admin/logowanie']);
+    expect(logout).not.toHaveBeenCalled();
+  });
+
+  it('includes the accessibility toolbar, so settings carried over from the public site can be changed', () => {
+    const el = render(true);
+    const bar = el.querySelector('app-a11y-toolbar');
+    expect(bar).not.toBeNull();
+    expect(bar!.querySelector('[data-test=contrast]')).not.toBeNull();
   });
 });

@@ -13,7 +13,7 @@ import { SITE_NAME } from '../core/config';
   selector: 'app-login-page',
   imports: [FormsModule, Button, InputText, Password, Message],
   template: `
-    <main class="login">
+    <main class="login" id="main" tabindex="-1">
       <h1>Panel administracyjny</h1>
       <p>{{ siteName }}</p>
       <form (ngSubmit)="submit()" #f="ngForm">
@@ -27,7 +27,7 @@ import { SITE_NAME } from '../core/config';
     </main>
   `,
   styles: `
-    .login { max-width: 24rem; margin: 4rem auto; padding: 0 1rem; }
+    .login { max-width: 24rem; margin: 4rem auto; padding: 0 1rem; outline: none; }
     form { display: flex; flex-direction: column; gap: .75rem; }
     :host ::ng-deep .p-password, :host ::ng-deep .p-password input { width: 100%; }
   `,
