@@ -7,17 +7,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <!--
     Pre-paint (przed pierwszym malowaniem, bez sieci): kolory pory roku w strefie Europe/Warsaw albo ostatni motyw
-    z /api/theme (localStorage, zapisuje ThemeService) + zapisane ustawienia paska dostępności (klucz `a11y`).
+    z /api/theme (localStorage, zapisuje ThemeService) + zapisane ustawienia paska dostępności (klucz `a11y`)
+    + atrybut data-season (obrazek banera): ostatni motyw sezonowy (`theme-season`) albo pora roku z daty.
     Tabela pór roku = DEFAULT_THEMES (theme/default-themes.ts) — zgodność pilnuje theme/prepaint.spec.ts.
   -->
   <script id="prepaint">
     (function (root) {
       var SHADES = ['50', '100', '200', '300', '400', '500', '600', '700', '800', '900'];
       var SEASONS = [
-        ['03-21', ['#f0fdf4', '#dcfce7', '#bbf7d0', '#86efac', '#4ade80', '#22c55e', '#16a34a', '#15803d', '#166534', '#14532d']],
-        ['06-23', ['#fefce8', '#fef9c3', '#fef08a', '#fde047', '#facc15', '#eab308', '#ca8a04', '#a16207', '#854d0e', '#713f12']],
-        ['09-23', ['#fef2f2', '#fee2e2', '#fecaca', '#fca5a5', '#f87171', '#ef4444', '#dc2626', '#b91c1c', '#991b1b', '#7f1d1d']],
-        ['12-21', ['#eff6ff', '#dbeafe', '#bfdbfe', '#93c5fd', '#60a5fa', '#3b82f6', '#2563eb', '#1d4ed8', '#1e40af', '#1e3a8a']]
+        ['03-21', 'spring', ['#f0fdf4', '#dcfce7', '#bbf7d0', '#86efac', '#4ade80', '#22c55e', '#16a34a', '#15803d', '#166534', '#14532d']],
+        ['06-23', 'summer', ['#fefce8', '#fef9c3', '#fef08a', '#fde047', '#facc15', '#eab308', '#ca8a04', '#a16207', '#854d0e', '#713f12']],
+        ['09-23', 'autumn', ['#fef2f2', '#fee2e2', '#fecaca', '#fca5a5', '#f87171', '#ef4444', '#dc2626', '#b91c1c', '#991b1b', '#7f1d1d']],
+        ['12-21', 'winter', ['#eff6ff', '#dbeafe', '#bfdbfe', '#93c5fd', '#60a5fa', '#3b82f6', '#2563eb', '#1d4ed8', '#1e40af', '#1e3a8a']]
       ];
       var KEYS = SHADES.concat(['accent', 'text']);
       var HEX = /^#[0-9a-fA-F]{6}$/;
@@ -37,8 +38,14 @@
         }
       }
       try {
-        var md = monthDay(new Date()), colors = SEASONS[SEASONS.length - 1][1], i;
-        for (i = 0; i < SEASONS.length; i++) if (md >= SEASONS[i][0]) colors = SEASONS[i][1];
+        var md = monthDay(new Date()), season = SEASONS[SEASONS.length - 1], i;
+        for (i = 0; i < SEASONS.length; i++) if (md >= SEASONS[i][0]) season = SEASONS[i];
+        var colors = season[2], banner = season[1];
+        try {
+          var remembered = window.localStorage.getItem('theme-season');
+          for (i = 0; i < SEASONS.length; i++) if (remembered === SEASONS[i][1]) banner = remembered;
+        } catch (e) { /* zostaje pora z daty */ }
+        root.setAttribute('data-season', banner);
         var palette = { accent: colors[7], text: colors[9] };
         for (i = 0; i < SHADES.length; i++) palette[SHADES[i]] = colors[i];
         var cached = read('theme-palette'), valid = !!cached && typeof cached === 'object';

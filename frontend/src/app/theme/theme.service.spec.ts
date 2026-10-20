@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Palette, Theme } from '../core/models';
+import { SEASON_CACHE_KEY } from './banner-season';
 import { PaletteApplier } from './palette-applier';
 import { THEME_CACHE_KEY, TODAY, ThemeService } from './theme.service';
 
@@ -12,6 +13,7 @@ describe('ThemeService', () => {
 
   beforeEach(() => {
     localStorage.clear();
+    document.documentElement.removeAttribute('data-season');
     applied = [];
     TestBed.configureTestingModule({
       providers: [
@@ -65,5 +67,29 @@ describe('ThemeService', () => {
     expect(service.current()?.key).toBe('autumn');
     expect(applied).toEqual([{ '500': '#ef4444' }]);
     spy.mockRestore();
+  });
+
+  it('marks <html> with the banner season of a season theme and remembers it for pre-paint', async () => {
+    const promise = service.load();
+    http.expectOne('/api/theme').flush({ id: 'w', key: 'winter', name: 'Zima', type: 'season', seasonStart: '12-21', palette: { '500': '#3b82f6' } });
+    await promise;
+    expect(document.documentElement.dataset['season']).toBe('winter');
+    expect(localStorage.getItem(SEASON_CACHE_KEY)).toBe('winter');
+  });
+
+  it('uses the date season for a special theme and forgets the remembered season', async () => {
+    localStorage.setItem(SEASON_CACHE_KEY, 'summer');
+    const promise = service.load();
+    http.expectOne('/api/theme').flush({ id: 'x', key: 'special-mikolajki', name: 'Mikołajki', type: 'special', seasonStart: null, palette: { '500': '#ff0000' } });
+    await promise;
+    expect(document.documentElement.dataset['season']).toBe('winter');
+    expect(localStorage.getItem(SEASON_CACHE_KEY)).toBeNull();
+  });
+
+  it('marks <html> with the date season when the API fails', async () => {
+    const promise = service.load();
+    http.expectOne('/api/theme').flush('err', { status: 500, statusText: 'Server Error' });
+    await promise;
+    expect(document.documentElement.dataset['season']).toBe('winter');
   });
 });

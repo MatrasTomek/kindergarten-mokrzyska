@@ -1,6 +1,7 @@
 import indexHtml from '../../index.html' with { loader: 'text' };
 import { A11yState } from '../a11y/a11y.service';
 import { Palette } from '../core/models';
+import { bannerSeason, SEASON_CACHE_KEY } from './banner-season';
 import { DEFAULT_THEMES, fallbackTheme, SHADES } from './default-themes';
 import { THEME_CACHE_KEY } from './theme.service';
 
@@ -28,12 +29,14 @@ describe('pre-paint script in index.html', () => {
   beforeEach(() => {
     localStorage.clear();
     html.removeAttribute('style');
+    html.removeAttribute('data-season');
     html.className = '';
   });
 
   afterAll(() => {
     localStorage.clear();
     html.removeAttribute('style');
+    html.removeAttribute('data-season');
     html.className = '';
   });
 
@@ -61,6 +64,30 @@ describe('pre-paint script in index.html', () => {
     expect(painted()).toEqual(spring.palette);
     run(new Date('2026-12-21T00:10:00+01:00'));
     expect(painted()).toEqual(winter.palette);
+  });
+
+  it('marks <html> with the same banner season as bannerSeason(null, date) for every day of the year', () => {
+    for (let day = 0; day < 366; day++) {
+      for (const hourUtc of [-0.5, 21.5]) {
+        const date = new Date(Date.UTC(2028, 0, 1) + day * 86_400_000 + hourUtc * 3_600_000);
+        run(date);
+        expect(html.dataset['season'], date.toISOString()).toBe(bannerSeason(null, date));
+      }
+    }
+  });
+
+  it('prefers the remembered banner season of the last season theme', () => {
+    localStorage.setItem(SEASON_CACHE_KEY, 'summer');
+    run(new Date('2026-01-15T12:00:00+01:00'));
+    expect(html.dataset['season']).toBe('summer');
+  });
+
+  it('ignores an unknown or corrupted remembered season and uses the date', () => {
+    for (const bad of ['mikolajki', '{}', '']) {
+      localStorage.setItem(SEASON_CACHE_KEY, bad);
+      run(new Date('2026-01-15T12:00:00+01:00'));
+      expect(html.dataset['season'], bad).toBe('winter');
+    }
   });
 
   it('prefers the cached palette from the last /api/theme', () => {

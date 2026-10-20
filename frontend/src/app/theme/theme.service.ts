@@ -1,8 +1,9 @@
-import { isPlatformBrowser } from '@angular/common';
+import { DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { inject, Injectable, InjectionToken, PLATFORM_ID, signal } from '@angular/core';
 import { firstValueFrom, timeout } from 'rxjs';
 import { PublicApi } from '../core/api/public-api';
 import { Theme } from '../core/models';
+import { bannerSeason, SEASON_CACHE_KEY } from './banner-season';
 import { fallbackTheme } from './default-themes';
 import { PaletteApplier } from './palette-applier';
 
@@ -17,6 +18,7 @@ export class ThemeService {
   private readonly applier = inject(PaletteApplier);
   private readonly today = inject(TODAY);
   private readonly browser = isPlatformBrowser(inject(PLATFORM_ID));
+  private readonly doc = inject(DOCUMENT);
   readonly current = signal<Theme | null>(null);
 
   async load(): Promise<void> {
@@ -33,6 +35,8 @@ export class ThemeService {
   private cache(theme: Theme): void {
     try {
       localStorage.setItem(THEME_CACHE_KEY, JSON.stringify(theme.palette));
+      if (theme.type === 'season') localStorage.setItem(SEASON_CACHE_KEY, theme.key);
+      else localStorage.removeItem(SEASON_CACHE_KEY);
     } catch {
       /* tryb prywatny / pełny storage — pre-paint użyje pory roku */
     }
@@ -41,5 +45,7 @@ export class ThemeService {
   apply(theme: Theme): void {
     this.current.set(theme);
     this.applier.apply(theme.palette);
+    // Obrazek banera strony głównej (CSS: html[data-season]); pre-paint ustawił go już przed malowaniem.
+    if (this.browser) this.doc.documentElement.dataset['season'] = bannerSeason(theme, this.today());
   }
 }
