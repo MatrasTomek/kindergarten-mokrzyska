@@ -15,7 +15,7 @@ import { TILES } from './tiles';
             <li>
               <a class="tile" [routerLink]="tile.path">
                 <i class="pi {{ tile.icon }}" aria-hidden="true"></i>
-                <span>{{ tile.label }}</span>
+                <span>{{ tile.title }}</span>
               </a>
             </li>
           }
