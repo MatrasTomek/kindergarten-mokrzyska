@@ -3,13 +3,15 @@ import { PublicApi } from '../../core/api/public-api';
 import { apiErrorMessage } from '../../core/api-error';
 import { Paged, Post } from '../../core/models';
 import { PostListComponent } from './post-list.component';
+import { PageHeaderComponent } from '../../shared/page-header.component';
+import { SECTIONS } from '../../core/sections';
 
 @Component({
   selector: 'app-posts-page',
-  imports: [PostListComponent],
+  imports: [PostListComponent, PageHeaderComponent],
   template: `
+    <app-page-header [section]="section()" [heading]="heading()" [crumbs]="[{ label: heading() }]" />
     <div class="page">
-      <h1>{{ heading() }}</h1>
       <app-post-list [data]="data()" [error]="error()" [loading]="loading()" (pageChange)="page.set($event)" />
     </div>
   `,
@@ -17,7 +19,8 @@ import { PostListComponent } from './post-list.component';
 export class PostsPage {
   private readonly api = inject(PublicApi);
   readonly mode = input.required<'news' | 'life'>();
-  protected readonly heading = computed(() => (this.mode() === 'news' ? 'Aktualności' : 'Z życia Przedszkola'));
+  protected readonly section = computed(() => SECTIONS[this.mode() === 'news' ? 'aktualnosci' : 'z-zycia-przedszkola']);
+  protected readonly heading = computed(() => this.section().title);
   protected readonly page = signal(1);
   protected readonly data = signal<Paged<Post> | null>(null);
   protected readonly error = signal<string | null>(null);

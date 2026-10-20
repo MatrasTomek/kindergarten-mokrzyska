@@ -7,19 +7,24 @@ import { apiErrorMessage } from '../../core/api-error';
 import { pageTitle, SITE_SHORT_NAME } from '../../core/config';
 import { Group, Paged, Post } from '../../core/models';
 import { PostListComponent } from '../posts/post-list.component';
+import { SECTIONS } from '../../core/sections';
+import { PageHeaderComponent } from '../../shared/page-header.component';
 
 const is404 = (e: unknown): boolean => e instanceof HttpErrorResponse && e.status === 404;
 
 @Component({
   selector: 'app-group-detail-page',
-  imports: [RouterLink, PostListComponent],
+  imports: [RouterLink, PostListComponent, PageHeaderComponent],
   template: `
+    @if (notFound()) {
+      <app-page-header [section]="neutral" heading="Nie ma takiej grupy" />
+    } @else {
+      <app-page-header [section]="section" [heading]="group()?.name ?? 'Grupa'" [crumbs]="[{ label: 'Grupy', link: '/grupy' }, { label: group()?.name ?? 'Grupa' }]" />
+    }
     <div class="page">
       @if (notFound()) {
-        <h1>Nie ma takiej grupy</h1>
         <p><a routerLink="/grupy">Zobacz wszystkie grupy</a></p>
       } @else {
-        <h1>{{ group()?.name ?? 'Grupa' }}</h1>
         @if (group()?.description) { <p>{{ group()!.description }}</p> }
         <app-post-list [data]="posts()" [error]="error()" [loading]="postsLoading()" (pageChange)="page.set($event)" />
         <p><a routerLink="/grupy">← Wszystkie grupy</a></p>
@@ -28,6 +33,8 @@ const is404 = (e: unknown): boolean => e instanceof HttpErrorResponse && e.statu
   `,
 })
 export class GroupDetailPage {
+  protected readonly section = SECTIONS.grupy;
+  protected readonly neutral = SECTIONS.neutral;
   private readonly api = inject(PublicApi);
   private readonly title = inject(Title);
   readonly slug = input.required<string>();

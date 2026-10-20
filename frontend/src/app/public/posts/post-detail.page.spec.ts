@@ -86,4 +86,46 @@ describe('PostDetailPage', () => {
     f.destroy();
     expect(TestBed.inject(Meta).getTag('name=description')).toBeNull();
   });
+
+  const post = (targets: { news: boolean; groupIds: string[] }) => ({
+    id: '1', title: 'Bal', slug: 'bal', excerpt: '', body: '', status: 'published', publishedAt: null, targets, images: [],
+  });
+  const crumbs = (el: HTMLElement): string[] => [...el.querySelectorAll('nav[aria-label="Ścieżka"] li')].map((li) => li.textContent!.trim());
+
+  it('shows a news post under Aktualności', () => {
+    const { f, http } = setup();
+    http.expectOne('/api/posts/bal').flush(post({ news: true, groupIds: ['g1'] }));
+    f.detectChanges();
+    expect(crumbs(f.nativeElement)).toEqual(['Start', 'Aktualności', 'Bal']);
+    expect(f.nativeElement.querySelector('img[src="/images/headers/3-960.webp"]')).not.toBeNull();
+  });
+
+  it('shows a group post under its group', () => {
+    const { f, http } = setup();
+    http.expectOne('/api/posts/bal').flush(post({ news: false, groupIds: ['g1'] }));
+    f.detectChanges();
+    TestBed.tick();
+    http.expectOne('/api/groups').flush([{ id: 'g1', name: 'Pingwinki', slug: 'pingwinki', order: 1, description: '' }]);
+    f.detectChanges();
+    expect(crumbs(f.nativeElement)).toEqual(['Start', 'Grupy', 'Pingwinki', 'Bal']);
+    expect(f.nativeElement.querySelector('nav[aria-label="Ścieżka"] a[href="/grupy/pingwinki"]')).not.toBeNull();
+  });
+
+  it('skips the group crumb when the group no longer exists', () => {
+    const { f, http } = setup();
+    http.expectOne('/api/posts/bal').flush(post({ news: false, groupIds: ['g-usunieta'] }));
+    f.detectChanges();
+    TestBed.tick();
+    http.expectOne('/api/groups').flush([]);
+    f.detectChanges();
+    expect(crumbs(f.nativeElement)).toEqual(['Start', 'Grupy', 'Bal']);
+  });
+
+  it('shows other posts under Z życia Przedszkola with a back link there', () => {
+    const { f, http } = setup();
+    http.expectOne('/api/posts/bal').flush(post({ news: false, groupIds: [] }));
+    f.detectChanges();
+    expect(crumbs(f.nativeElement)).toEqual(['Start', 'Z życia Przedszkola', 'Bal']);
+    expect(f.nativeElement.querySelector('.page a[href="/z-zycia-przedszkola"]')).not.toBeNull();
+  });
 });

@@ -55,7 +55,8 @@ export interface Crumb { label: string; link?: string }
       padding: 1.5rem 1.5rem 1.5rem max(1rem, calc((100vw - 70rem) / 2)); box-sizing: border-box; min-width: 0;
     }
     h1 { margin: 0; color: #fff; font-size: clamp(1.75rem, 4vw, 2.75rem); overflow-wrap: anywhere; }
-    img { width: 100%; height: 100%; min-height: 100%; object-fit: cover; display: block; }
+    /* height:0 + min-height:100% — zdjęcie wypełnia wiersz, ale nie wyznacza jego wysokości (tę daje tekst i min-height). */
+    img { width: 100%; height: 0; min-height: 100%; object-fit: cover; display: block; }
     @media (max-width: 48rem) {
       .page-hero { grid-template-columns: 1fr; }
       img { order: -1; height: 6rem; min-height: 0; }

@@ -6,6 +6,7 @@ import { provideRouter } from '@angular/router';
 import { providePrimeNG } from 'primeng/config';
 import { GroupDetailPage } from './group-detail.page';
 import { GroupsPage } from './groups.page';
+import { groupColor } from '../../core/sections';
 
 describe('Groups pages', () => {
   beforeEach(() => TestBed.configureTestingModule({
@@ -22,6 +23,19 @@ describe('Groups pages', () => {
     expect(f.nativeElement.querySelector('a[href="/grupy/pingwinki"]').textContent).toContain('Pingwinki');
   });
 
+  it('paints each group tile in the next tile colour', () => {
+    const f = TestBed.createComponent(GroupsPage);
+    f.detectChanges();
+    TestBed.inject(HttpTestingController).expectOne('/api/groups').flush([
+      { id: '1', name: 'Ananaski', slug: 'ananaski', order: 1, description: '' },
+      { id: '2', name: 'Pingwinki', slug: 'pingwinki', order: 2, description: '' },
+    ]);
+    f.detectChanges();
+    const links = [...f.nativeElement.querySelectorAll('.groups a')] as HTMLElement[];
+    expect(links.map((a) => a.style.getPropertyValue('--section'))).toEqual([groupColor(0), groupColor(1)]);
+    expect(f.nativeElement.querySelector('app-page-header h1').textContent).toBe('Grupy');
+  });
+
   it('loads group and its posts', () => {
     const f = TestBed.createComponent(GroupDetailPage);
     f.componentRef.setInput('slug', 'pingwinki');
@@ -32,6 +46,7 @@ describe('Groups pages', () => {
     http.expectOne('/api/posts?page=1&group=pingwinki').flush({ items: [], page: 1, pages: 1, total: 0 });
     f.detectChanges();
     expect(f.nativeElement.querySelector('h1').textContent).toBe('Pingwinki');
+    expect([...f.nativeElement.querySelectorAll('nav[aria-label="Ścieżka"] li')].map((li: Element) => li.textContent!.trim())).toEqual(['Start', 'Grupy', 'Pingwinki']);
     expect(f.nativeElement.textContent).toContain('Grupa 3-latków');
     expect(TestBed.inject(Title).getTitle()).toBe('Pingwinki – Przedszkole Parafialne w Mokrzyskach');
   });

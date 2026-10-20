@@ -71,4 +71,14 @@ describe('ContentPageComponent', () => {
     f.detectChanges();
     expect(f.nativeElement.querySelector('h1').textContent).toBe('RODO');
   });
+
+  it('shows the section header with its photo', () => {
+    const { f, http } = setup();
+    http.expectOne('/api/content/dokumenty').flush([]);
+    f.detectChanges();
+    const header = f.nativeElement.querySelector('app-page-header') as HTMLElement;
+    expect(header.querySelector('h1')!.textContent).toBe('Dokumenty');
+    expect(header.querySelector('img')!.getAttribute('src')).toBe('/images/headers/5-960.webp');
+    expect([...header.querySelectorAll('nav li')].map((li) => li.textContent!.trim())).toEqual(['Start', 'Dokumenty']);
+  });
 });
