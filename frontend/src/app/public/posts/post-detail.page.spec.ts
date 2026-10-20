@@ -109,6 +109,9 @@ describe('PostDetailPage', () => {
     f.detectChanges();
     expect(crumbs(f.nativeElement)).toEqual(['Start', 'Grupy', 'Pingwinki', 'Bal']);
     expect(f.nativeElement.querySelector('nav[aria-label="Ścieżka"] a[href="/grupy/pingwinki"]')).not.toBeNull();
+    const back = f.nativeElement.querySelector('.back a') as HTMLAnchorElement;
+    expect(back.getAttribute('href')).toBe('/grupy/pingwinki');
+    expect(back.textContent!.trim()).toBe('← Wpisy grupy Pingwinki');
   });
 
   it('skips the group crumb when the group no longer exists', () => {
@@ -119,6 +122,9 @@ describe('PostDetailPage', () => {
     http.expectOne('/api/groups').flush([]);
     f.detectChanges();
     expect(crumbs(f.nativeElement)).toEqual(['Start', 'Grupy', 'Bal']);
+    const back = f.nativeElement.querySelector('.back a') as HTMLAnchorElement;
+    expect(back.getAttribute('href')).toBe('/grupy');
+    expect(back.textContent!.trim()).toBe('← Wszystkie grupy');
   });
 
   it('shows other posts under Z życia Przedszkola with a back link there', () => {
@@ -126,6 +132,6 @@ describe('PostDetailPage', () => {
     http.expectOne('/api/posts/bal').flush(post({ news: false, groupIds: [] }));
     f.detectChanges();
     expect(crumbs(f.nativeElement)).toEqual(['Start', 'Z życia Przedszkola', 'Bal']);
-    expect(f.nativeElement.querySelector('.page a[href="/z-zycia-przedszkola"]')).not.toBeNull();
+    expect(f.nativeElement.querySelector('.back a[href="/z-zycia-przedszkola"]').textContent.trim()).toBe('← Wszystkie wpisy');
   });
 });

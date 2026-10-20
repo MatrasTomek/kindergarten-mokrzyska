@@ -31,8 +31,8 @@ import { TODAY } from '../theme/theme.service';
     :host { display: flex; flex-direction: column; min-height: 100vh; }
     .site-header { max-width: 72rem; margin: 0 auto; width: 100%; box-sizing: border-box; padding: 1rem; }
     .brand { display: flex; align-items: center; gap: 1rem; text-decoration: none; color: var(--app-text); }
-    .brand img { width: 4.5rem; height: 4.5rem; object-fit: contain; }
-    .brand-name { font-family: var(--font-head); font-size: clamp(1.25rem, 3vw, 2rem); font-weight: 800; line-height: 1.2; }
+    .brand img { width: min(4.5rem, 20vw); height: auto; aspect-ratio: 1; object-fit: contain; flex: none; }
+    .brand-name { font-family: var(--font-head); font-size: clamp(1.25rem, 3vw, 2rem); font-weight: 800; line-height: 1.2; min-width: 0; overflow-wrap: break-word; }
     main { flex: 1; outline: none; }
     .site-footer { padding: 2rem 1rem; text-align: center; }
     .site-footer--dark { background: var(--app-primary-900); color: #fff; }

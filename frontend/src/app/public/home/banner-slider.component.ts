@@ -55,7 +55,9 @@ const img = (s: SeasonKey, w: number): string => `url(/images/start/${s}-${w}.we
     </div>
   `,
   styles: `
-    :host { position: relative; display: block; overflow: hidden; height: clamp(16rem, 42vw, 30rem); background: #e5e7eb; }
+    :host { position: relative; display: grid; overflow: hidden; min-height: clamp(16rem, 42vw, 30rem); background: #e5e7eb; }
+    /* Slajdy i nakładka w tej samej komórce siatki: baner rośnie z tekstem (powiększona czcionka), zamiast go ucinać. */
+    .slides { grid-area: 1 / 1; position: relative; }
     .slide {
       position: absolute; inset: 0; opacity: 0; transition: opacity .8s ease;
       background: var(--img-768) center / cover no-repeat;
@@ -86,7 +88,7 @@ const img = (s: SeasonKey, w: number): string => `url(/images/start/${s}-${w}.we
       :host-context(html[data-season='winter']) .slides:not(.is-ready) .slide--winter,
       :host-context(html:not([data-season])) .slides:not(.is-ready) .slide--summer { background-image: var(--img-1920); }
     }
-    .overlay { position: absolute; inset: 0; }
+    .overlay { grid-area: 1 / 1; position: relative; display: flex; flex-direction: column; }
     .controls {
       position: absolute; right: 1rem; bottom: 1rem; display: flex; align-items: center; gap: .25rem;
       padding: .25rem; border-radius: 999px; background: rgba(0, 0, 0, .45);

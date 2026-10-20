@@ -42,3 +42,25 @@ test('seasonal theme from API is applied', async ({ page, request }) => {
     )
     .toEqual(Object.fromEntries(Object.entries(expected).map(([k, v]) => [k, String(v).toLowerCase()])));
 });
+
+test('home banner loads only the current-season image before page load, the rest later', async ({ page }) => {
+  await page.goto('/');
+  await page.waitForLoadState('networkidle');
+  const season = await page.locator('html').getAttribute('data-season');
+  const { early, all } = await page.evaluate(() => {
+    const loadStart = (performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming).loadEventStart;
+    const starts = (performance.getEntriesByType('resource') as PerformanceResourceTiming[]).filter((r) => r.name.includes('/images/start/'));
+    return { early: starts.filter((r) => r.startTime < loadStart).map((r) => r.name), all: starts.map((r) => r.name) };
+  });
+  expect(early).toHaveLength(1);
+  expect(early[0]).toContain(`/images/start/${season}-`);
+  expect(all.length).toBeGreaterThan(1);
+});
+
+test('home banner: next button moves to the next slide', async ({ page }) => {
+  await page.goto('/');
+  const current = page.locator('app-banner-slider .dot[aria-current="true"]');
+  const before = await current.getAttribute('aria-label');
+  await page.getByRole('button', { name: 'Następny obraz' }).click();
+  await expect(current).not.toHaveAttribute('aria-label', before!);
+});

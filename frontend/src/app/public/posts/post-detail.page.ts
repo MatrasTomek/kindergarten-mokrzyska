@@ -33,7 +33,7 @@ function describe(p: Post): string {
           <div class="rich" [innerHTML]="p.body"></div>
           <app-gallery [images]="p.images" [label]="'Galeria zdjęć: ' + p.title" />
         </article>
-        <p><a [routerLink]="section().path">← Wszystkie wpisy</a></p>
+        <p class="back"><a [routerLink]="back().link">{{ back().label }}</a></p>
       } @else if (notFound()) {
         <p><a routerLink="/z-zycia-przedszkola">Zobacz wszystkie wpisy</a></p>
       } @else if (error()) {
@@ -61,11 +61,22 @@ export class PostDetailPage {
     const p = this.post();
     return p ? SECTIONS[postSection(p)] : this.neutral;
   });
+  /** Pierwsza grupa wpisu grupowego (undefined, gdy lista nie dotarła albo grupy już nie ma). */
+  private readonly group = computed(() => {
+    const p = this.post();
+    return p && this.section().key === 'grupy' ? this.groups()?.find((g) => g.id === p.targets.groupIds[0]) : undefined;
+  });
+  protected readonly back = computed(() => {
+    const g = this.group();
+    if (g) return { link: `/grupy/${g.slug}`, label: `← Wpisy grupy ${g.name}` };
+    const s = this.section();
+    return s.key === 'grupy' ? { link: '/grupy', label: '← Wszystkie grupy' } : { link: s.path, label: '← Wszystkie wpisy' };
+  });
   protected readonly crumbs = computed<Crumb[]>(() => {
     const p = this.post();
     if (!p) return [];
     const s = this.section();
-    const group = s.key === 'grupy' ? this.groups()?.find((g) => g.id === p.targets.groupIds[0]) : undefined;
+    const group = this.group();
     return [
       { label: s.title, link: s.path },
       ...(group ? [{ label: group.name, link: `/grupy/${group.slug}` }] : []),

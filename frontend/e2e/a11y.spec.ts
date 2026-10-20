@@ -94,6 +94,60 @@ test('no violations in high-contrast mode', async ({ page }) => {
   expect(await audit(page)).toEqual([]);
 });
 
+test('high contrast keeps the banner heading on a solid black block (not on the photo)', async ({ page }) => {
+  await page.goto('/');
+  await expectRendered(page, /^Publiczne Przedszkole Parafialne w Mokrzyskach/);
+  await page.getByRole('button', { name: 'Wysoki kontrast' }).click();
+  const h1 = page.getByRole('heading', { level: 1 });
+  await expect(h1).toBeVisible();
+  expect(await h1.evaluate((e) => getComputedStyle(e).backgroundColor)).toBe('rgb(0, 0, 0)');
+  expect(await h1.evaluate((e) => getComputedStyle(e).color)).toBe('rgb(255, 255, 0)');
+});
+
+test('a very long post title wraps on a phone at 150% text without horizontal scroll', async ({ page, request }) => {
+  const title = `Bardzo długi tytuł wpisu ${'o wycieczce do ogrodu botanicznego '.repeat(3)}`.slice(0, 120).trim();
+  const res = await request.post('/api/admin/posts', {
+    headers: { Authorization: `Bearer ${await adminToken(request)}` },
+    data: { title, excerpt: '', body: '<p>Treść</p>', images: [], targets: { news: false, groupIds: [] }, status: 'published' },
+  });
+  expect(res.status()).toBe(201);
+  await page.setViewportSize({ width: 375, height: 800 });
+  await page.addInitScript(() => localStorage.setItem('a11y', JSON.stringify({ fontScale: 2, contrast: false, readableFont: false, grayscale: false })));
+  await page.goto(`/wpis/${(await res.json()).slug}`);
+  await expectRendered(page, title);
+  await expect(page.locator('html')).toHaveClass(/a11y-font-2/);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+  const box = (await page.getByRole('heading', { level: 1 }).boundingBox())!;
+  expect(box.x).toBeGreaterThanOrEqual(0);
+  expect(box.x + box.width).toBeLessThanOrEqual(375);
+});
+
+test('home tiles and site name fit a phone at 150% text without horizontal scroll', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 800 });
+  await page.addInitScript(() => localStorage.setItem('a11y', JSON.stringify({ fontScale: 2, contrast: false, readableFont: false, grayscale: false })));
+  await page.goto('/');
+  await expectRendered(page, /^Publiczne Przedszkole Parafialne w Mokrzyskach/);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+});
+
+for (const readableFont of [false, true]) {
+  test(`banner grows with 150% text on a 320px phone and keeps the tag and heading inside (readable font: ${readableFont})`, async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 800 });
+    await page.addInitScript((rf) => localStorage.setItem('a11y', JSON.stringify({ fontScale: 2, contrast: false, readableFont: rf, grayscale: false })), readableFont);
+    await page.goto('/');
+    await expectRendered(page, /^Publiczne Przedszkole Parafialne w Mokrzyskach/);
+    const banner = (await page.locator('app-banner-slider').boundingBox())!;
+    for (const el of [page.getByRole('heading', { level: 1 }), page.locator('app-banner-slider .tag')]) {
+      const box = (await el.boundingBox())!;
+      expect(box.y).toBeGreaterThanOrEqual(banner.y);
+      expect(box.y + box.height).toBeLessThanOrEqual(banner.y + banner.height);
+    }
+    const controls = (await page.getByRole('group', { name: 'Pokaz zdjęć przedszkola' }).boundingBox())!;
+    const h1 = (await page.getByRole('heading', { level: 1 }).boundingBox())!;
+    expect(h1.y + h1.height).toBeLessThanOrEqual(controls.y);
+  });
+}
+
 test('the accessibility toolbar is sticky on desktop but not on a phone (it would cover the page at 125/150%)', async ({ page }) => {
   const position = () => page.locator('app-a11y-toolbar').evaluate((e) => getComputedStyle(e).position);
   await page.setViewportSize({ width: 1280, height: 800 });
