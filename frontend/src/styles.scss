@@ -6,6 +6,9 @@
   --app-primary-800: #991b1b; --app-primary-900: #7f1d1d;
   --app-accent: #b91c1c;
   --app-text: #7f1d1d;
+  --radius-sm: .75rem; --radius: 1rem; --radius-lg: 1.25rem;
+  --font-head: 'Nunito', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-body: 'Nunito', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
 
 html { font-size: 100%; }
@@ -14,13 +17,21 @@ html.a11y-font-2 { font-size: 150%; }
 
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-body);
   color: var(--app-fg);
   background: var(--app-bg);
   line-height: 1.6;
 }
 
-h1, h2, h3 { color: var(--app-text); line-height: 1.25; }
+h1, h2, h3 { color: var(--app-text); line-height: 1.25; font-family: var(--font-head); font-weight: 800; }
+
+/* Etykieta-pigułka; rodzic ustawia --section (kolor działu). */
+.tag {
+  display: inline-block; padding: .2rem .6rem; border-radius: 999px;
+  font-size: .7rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; line-height: 1.4;
+  background: var(--tag-bg, var(--section)); color: var(--tag-fg, #fff);
+}
+.tag--light { --tag-bg: #fff; --tag-fg: var(--section); }
 
 .page { max-width: 72rem; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
 .rich a, main p a { text-decoration: underline; }
@@ -37,6 +48,10 @@ h1, h2, h3 { color: var(--app-text); line-height: 1.25; }
 .skip-link:focus { left: 1rem; top: 1rem; z-index: 2000; background: #fff; color: #000; padding: .5rem 1rem; border: 2px solid #000; }
 
 /* --- pasek dostępności --- */
+html.a11y-readable {
+  --font-head: 'Atkinson Hyperlegible', sans-serif;
+  --font-body: 'Atkinson Hyperlegible', sans-serif;
+}
 html.a11y-readable body {
   font-family: 'Atkinson Hyperlegible', sans-serif;
   letter-spacing: .03em;
@@ -60,6 +75,7 @@ html.a11y-contrast body [aria-pressed='true'] {
   background-color: #ff0 !important;
   color: #000 !important;
 }
+html.a11y-contrast .tag { border: 1px solid #ff0; }
 html.a11y-contrast a { color: #0ff !important; text-decoration: underline !important; }
 html.a11y-contrast :focus-visible { outline-color: #fff; }
 

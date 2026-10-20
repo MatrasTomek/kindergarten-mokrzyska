@@ -19,6 +19,13 @@ describe('PublicLayoutComponent', () => {
     el.remove();
   });
 
+  it('renders the dark footer variant', () => {
+    TestBed.configureTestingModule({ imports: [PublicLayoutComponent], providers: [provideRouter([])] });
+    const f = TestBed.createComponent(PublicLayoutComponent);
+    f.detectChanges();
+    expect(f.nativeElement.querySelector('footer').classList).toContain('site-footer--dark');
+  });
+
   it('takes the footer year from the runtime clock, so the browser replaces the year frozen in prerendered HTML', () => {
     TestBed.configureTestingModule({
       imports: [PublicLayoutComponent],

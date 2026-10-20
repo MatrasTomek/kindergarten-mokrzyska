@@ -18,7 +18,7 @@ import { TODAY } from '../theme/theme.service';
       </a>
     </header>
     <main id="main" tabindex="-1"><router-outlet /></main>
-    <footer class="site-footer">
+    <footer class="site-footer site-footer--dark">
       <nav aria-label="Stopka">
         <a routerLink="/deklaracja-dostepnosci">Deklaracja dostępności</a>
         <a routerLink="/rodo">RODO</a>
@@ -32,11 +32,14 @@ import { TODAY } from '../theme/theme.service';
     .site-header { max-width: 72rem; margin: 0 auto; width: 100%; box-sizing: border-box; padding: 1rem; }
     .brand { display: flex; align-items: center; gap: 1rem; text-decoration: none; color: var(--app-text); }
     .brand img { width: 4.5rem; height: 4.5rem; object-fit: contain; }
-    .brand-name { font-size: clamp(1.25rem, 3vw, 2rem); font-weight: 700; line-height: 1.2; }
+    .brand-name { font-family: var(--font-head); font-size: clamp(1.25rem, 3vw, 2rem); font-weight: 800; line-height: 1.2; }
     main { flex: 1; outline: none; }
-    .site-footer { background: var(--app-primary-50); border-top: 2px solid var(--app-primary-200); padding: 1.5rem 1rem; text-align: center; }
-    .site-footer nav { display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap; }
-    .site-footer a { color: var(--app-text); }
+    .site-footer { padding: 2rem 1rem; text-align: center; }
+    .site-footer--dark { background: var(--app-primary-900); color: #fff; }
+    .site-footer nav { display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap; font-weight: 700; }
+    .site-footer a { color: inherit; }
+    .site-footer a:focus-visible { outline-color: #fff; }
+    .site-footer p { margin: 1rem 0 0; opacity: .9; }
   `,
 })
 export class PublicLayoutComponent {
