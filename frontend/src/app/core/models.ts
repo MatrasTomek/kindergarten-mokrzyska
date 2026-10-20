@@ -4,6 +4,9 @@ export type Shade = '50' | '100' | '200' | '300' | '400' | '500' | '600' | '700'
 export type Palette = Record<Shade, string> & { accent: string; text: string };
 
 export interface Theme { id: string | null; key: string; name: string; type: 'season' | 'special'; palette: Palette; seasonStart: string | null }
+export type DecorKey = 'christmas' | 'epiphany' | 'easter' | 'pentecost' | 'corpus-christi' | 'all-saints' | 'st-nicholas' | 'childrens-day';
+export interface PublicTheme extends Theme { decor: string | null }
+export interface DecorSettings { decorKey: DecorKey | null }
 export interface Settings { themeMode: 'auto' | 'manual'; manualThemeId: string | null }
 export interface AuthUser { id: string; email: string; name: string; role: Role }
 export interface LoginResponse { accessToken: string; user: AuthUser }

@@ -71,6 +71,22 @@ for (const [path, h1] of PAGES) {
   });
 }
 
+test('no WCAG A/AA violations with a holiday decor theme on', async ({ page, request }) => {
+  const headers = { Authorization: `Bearer ${await adminToken(request)}` };
+  expect((await request.put('/api/admin/decor', { headers, data: { decorKey: 'easter' } })).status()).toBe(200);
+  try {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    for (const [path, h1] of [['/aktualnosci', 'Aktualności'], ['/kontakt', 'Kontakt']] as const) {
+      await page.goto(path);
+      await expectRendered(page, h1);
+      await expect(page.locator('.decor img').first()).toBeAttached();
+      expect(await audit(page)).toEqual([]);
+    }
+  } finally {
+    await request.put('/api/admin/decor', { headers, data: { decorKey: null } });
+  }
+});
+
 test('no WCAG A/AA violations on a post detail page', async ({ page }) => {
   await page.goto(`/wpis/${postSlug}`);
   await expectRendered(page, postTitle);

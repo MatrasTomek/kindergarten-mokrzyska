@@ -20,7 +20,7 @@ final class ThemeController
 
     public function active(Request $req, Response $res): Response
     {
-        return Json::write($res, ThemePresenter::toArray($this->resolver->active()));
+        return Json::write($res, ThemePresenter::toArray($this->resolver->active()) + ['decor' => $this->service->decor()['decorKey']]);
     }
 
     public function list(Request $req, Response $res): Response
@@ -54,5 +54,15 @@ final class ThemeController
     public function putSettings(Request $req, Response $res): Response
     {
         return Json::write($res, $this->service->saveSettings(Input::body($req)));
+    }
+
+    public function getDecor(Request $req, Response $res): Response
+    {
+        return Json::write($res, $this->service->decor());
+    }
+
+    public function putDecor(Request $req, Response $res): Response
+    {
+        return Json::write($res, $this->service->saveDecor(Input::body($req)));
     }
 }

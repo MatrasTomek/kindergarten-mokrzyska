@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { API } from '../config';
 import {
-  AdminPost, Attachment, AuthUser, ContentInput, ContentItem, Group, GroupInput, Paged, PostInput,
+  AdminPost, Attachment, AuthUser, ContentInput, DecorSettings, ContentItem, Group, GroupInput, Paged, PostInput,
   Settings, Theme, ThemeInput, UploadedImage, UserAccount, UserInput, UserUpdate,
 } from '../models';
 
@@ -51,6 +51,8 @@ export class AdminApi {
   deleteTheme(id: string) { return this.http.delete<void>(`${this.base}/themes/${id}`); }
   settings() { return this.http.get<Settings>(`${this.base}/settings`); }
   saveSettings(s: Settings) { return this.http.put<Settings>(`${this.base}/settings`, s); }
+  decor() { return this.http.get<DecorSettings>(`${this.base}/decor`); }
+  saveDecor(s: DecorSettings) { return this.http.put<DecorSettings>(`${this.base}/decor`, s); }
 
   users() { return this.http.get<UserAccount[]>(`${this.base}/users`); }
   createUser(input: UserInput) { return this.http.post<UserAccount>(`${this.base}/users`, input); }

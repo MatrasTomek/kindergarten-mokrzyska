@@ -2,14 +2,14 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { API } from '../config';
 import { ContentPageSlug } from '../content-pages';
-import { ContentItem, Group, Paged, Post, Theme } from '../models';
+import { ContentItem, Group, Paged, Post, PublicTheme } from '../models';
 
 @Injectable({ providedIn: 'root' })
 export class PublicApi {
   private readonly http = inject(HttpClient);
 
   theme() {
-    return this.http.get<Theme>(`${API}/theme`);
+    return this.http.get<PublicTheme>(`${API}/theme`);
   }
 
   posts(q: { news?: boolean; group?: string; page?: number } = {}) {

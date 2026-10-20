@@ -3,6 +3,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Palette, Theme } from '../core/models';
 import { SEASON_CACHE_KEY } from './banner-season';
+import { DEFAULT_THEMES } from './default-themes';
 import { PaletteApplier } from './palette-applier';
 import { THEME_CACHE_KEY, TODAY, ThemeService } from './theme.service';
 
@@ -34,6 +35,36 @@ describe('ThemeService', () => {
     await promise;
     expect(service.current()?.key).toBe('special-mikolajki');
     expect(applied).toEqual([theme.palette]);
+  });
+
+  it('exposes the holiday decor set from the API', async () => {
+    const promise = service.load();
+    http.expectOne('/api/theme').flush({ ...DEFAULT_THEMES[0], decor: 'easter' });
+    await promise;
+    expect(service.decor()?.key).toBe('easter');
+    expect(applied).toEqual([DEFAULT_THEMES[0].palette]);
+  });
+
+  it('ignores an unknown decor key', async () => {
+    const promise = service.load();
+    http.expectOne('/api/theme').flush({ ...DEFAULT_THEMES[0], decor: 'stary' });
+    await promise;
+    expect(service.decor()).toBeNull();
+  });
+
+  it('has no decor when the API fails', async () => {
+    const promise = service.load();
+    http.expectOne('/api/theme').flush('err', { status: 500, statusText: 'Server Error' });
+    await promise;
+    expect(service.decor()).toBeNull();
+  });
+
+  it('keeps decor when a palette is applied (admin preview)', async () => {
+    const promise = service.load();
+    http.expectOne('/api/theme').flush({ ...DEFAULT_THEMES[0], decor: 'easter' });
+    await promise;
+    service.apply(DEFAULT_THEMES[1]);
+    expect(service.decor()?.key).toBe('easter');
   });
 
   it('falls back to local season when API fails', async () => {

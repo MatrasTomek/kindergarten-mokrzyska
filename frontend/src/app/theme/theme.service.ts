@@ -4,6 +4,7 @@ import { firstValueFrom, timeout } from 'rxjs';
 import { PublicApi } from '../core/api/public-api';
 import { Theme } from '../core/models';
 import { bannerSeason, SEASON_CACHE_KEY } from './banner-season';
+import { DecorTheme, decorTheme } from './decor-catalog';
 import { fallbackTheme } from './default-themes';
 import { PaletteApplier } from './palette-applier';
 
@@ -20,6 +21,8 @@ export class ThemeService {
   private readonly browser = isPlatformBrowser(inject(PLATFORM_ID));
   private readonly doc = inject(DOCUMENT);
   readonly current = signal<Theme | null>(null);
+  /** Aktywny motyw świąteczny (ilustracje); niezależny od palety. */
+  readonly decor = signal<DecorTheme | null>(null);
 
   async load(): Promise<void> {
     if (!this.browser) return;
@@ -27,8 +30,10 @@ export class ThemeService {
       const theme = await firstValueFrom(this.api.theme().pipe(timeout(5000)));
       this.apply(theme);
       this.cache(theme);
+      this.decor.set(decorTheme(theme.decor));
     } catch {
       this.apply(fallbackTheme(this.today()));
+      this.decor.set(null);
     }
   }
 

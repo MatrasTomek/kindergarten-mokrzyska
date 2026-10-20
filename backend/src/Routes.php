@@ -79,5 +79,7 @@ final class Routes
         $a->delete('/users/{id}', [$s->userController, 'delete']);
         $a->get('/settings', [$s->themeController, 'getSettings']);
         $a->put('/settings', [$s->themeController, 'putSettings']);
+        $a->get('/decor', [$s->themeController, 'getDecor']);
+        $a->put('/decor', [$s->themeController, 'putDecor']);
     }
 }

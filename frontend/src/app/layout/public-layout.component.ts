@@ -2,13 +2,15 @@ import { DOCUMENT } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { RouterLink, RouterOutlet } from '@angular/router';
 import { A11yToolbarComponent } from '../a11y/a11y-toolbar.component';
+import { DecorLayerComponent } from './decor-layer.component';
 import { SITE_NAME } from '../core/config';
 import { TODAY } from '../theme/theme.service';
 
 @Component({
   selector: 'app-public-layout',
-  imports: [RouterOutlet, RouterLink, A11yToolbarComponent],
+  imports: [RouterOutlet, RouterLink, A11yToolbarComponent, DecorLayerComponent],
   template: `
+    <app-decor-layer />
     <a class="skip-link" href="#main" (click)="skipToMain($event)">Przejdź do treści</a>
     <app-a11y-toolbar />
     <header class="site-header">
@@ -28,7 +30,9 @@ import { TODAY } from '../theme/theme.service';
     </footer>
   `,
   styles: `
-    :host { display: flex; flex-direction: column; min-height: 100vh; }
+    :host { display: flex; flex-direction: column; min-height: 100vh; position: relative; }
+    /* Treść zawsze nad ilustracjami motywu świątecznego. */
+    .site-header, main, .site-footer { position: relative; z-index: 1; }
     .site-header { max-width: 72rem; margin: 0 auto; width: 100%; box-sizing: border-box; padding: 1rem; }
     .brand { display: flex; align-items: center; gap: 1rem; text-decoration: none; color: var(--app-text); }
     .brand img { width: min(4.5rem, 20vw); height: auto; aspect-ratio: 1; object-fit: contain; flex: none; }
