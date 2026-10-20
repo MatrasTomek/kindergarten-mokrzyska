@@ -19,6 +19,13 @@ describe('PublicLayoutComponent', () => {
     el.remove();
   });
 
+  it('hosts the holiday decor layer', () => {
+    TestBed.configureTestingModule({ imports: [PublicLayoutComponent], providers: [provideRouter([])] });
+    const f = TestBed.createComponent(PublicLayoutComponent);
+    f.detectChanges();
+    expect(f.nativeElement.querySelector('app-decor-layer')).not.toBeNull();
+  });
+
   it('renders the dark footer variant', () => {
     TestBed.configureTestingModule({ imports: [PublicLayoutComponent], providers: [provideRouter([])] });
     const f = TestBed.createComponent(PublicLayoutComponent);

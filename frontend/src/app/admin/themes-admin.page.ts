@@ -10,8 +10,9 @@ import { RadioButton } from 'primeng/radiobutton';
 import { Select } from 'primeng/select';
 import { AdminApi } from '../core/api/admin-api';
 import { apiErrorMessage } from '../core/api-error';
-import { Palette, Settings, Theme, ThemeInput } from '../core/models';
+import { DecorKey, Palette, Settings, Theme, ThemeInput } from '../core/models';
 import { paletteWarnings } from '../theme/contrast';
+import { DECOR_THEMES, decorTheme } from '../theme/decor-catalog';
 import { DEFAULT_THEMES, SHADES } from '../theme/default-themes';
 import { ThemeService } from '../theme/theme.service';
 import { focusAfterConfirm } from '../shared/focus-after-confirm';
@@ -46,6 +47,21 @@ const HEX = /^#[0-9a-f]{6}$/i;
         </div>
         <p-button label="Zapisz ustawienia" (onClick)="saveSettings()"
                   [disabled]="settingsSaving() || (settings.themeMode === 'manual' && !settings.manualThemeId)" [loading]="settingsSaving()" />
+      </fieldset>
+
+      <fieldset class="box">
+        <legend>Motyw świąteczny (dekoracje)</legend>
+        <p class="hint">Dodaje małe ilustracje na stronach. Kolory strony się nie zmieniają.</p>
+        <div class="row">
+          <p-select [options]="decorOptions" optionLabel="name" optionValue="key" [ngModel]="decorKey()" (ngModelChange)="decorKey.set($event)" ariaLabel="Motyw świąteczny" />
+          <p-button label="Zapisz dekoracje" (onClick)="saveDecor()" [disabled]="decorSaving()" [loading]="decorSaving()" />
+        </div>
+        @if (decorPreview(); as set) {
+          <ul class="decor-preview">
+            @for (src of set.images; track src) { <li><img [src]="src" alt="" width="48" height="48" /></li> }
+          </ul>
+          <p class="hint">Na stronie pojawi się losowo kilka z tych ilustracji.</p>
+        }
       </fieldset>
 
       <div class="head"><h2>Motywy</h2><p-button label="+ Motyw okolicznościowy" (onClick)="openNew()" /></div>
@@ -101,6 +117,9 @@ const HEX = /^#[0-9a-f]{6}$/i;
     .error { margin: 1rem 0; }
     .box { border: 1px solid #e5e7eb; border-radius: .5rem; padding: 1rem; margin-bottom: 1.5rem; }
     .row { display: flex; gap: .5rem; align-items: center; margin: .5rem 0; flex-wrap: wrap; }
+    .hint { margin: .25rem 0; color: #4b5563; }
+    .decor-preview { list-style: none; padding: 0; margin: .5rem 0 0; display: flex; flex-wrap: wrap; gap: .75rem; }
+    .decor-preview img { display: block; }
     .head { display: flex; justify-content: space-between; align-items: center; }
     .themes { list-style: none; padding: 0; } .themes li { display: flex; gap: 1rem; align-items: center; padding: .5rem 0; border-bottom: 1px solid #e5e7eb; }
     .swatches { display: flex; } .swatches span { width: 1.25rem; height: 1.25rem; }
@@ -124,6 +143,10 @@ export class ThemesAdminPage {
   protected readonly saving = signal(false);
   protected readonly settingsSaving = signal(false);
   protected settings: Settings = { themeMode: 'auto', manualThemeId: null };
+  protected readonly decorOptions = [{ key: null, name: 'Brak' }, ...DECOR_THEMES];
+  protected readonly decorKey = signal<DecorKey | null>(null);
+  protected readonly decorPreview = computed(() => decorTheme(this.decorKey()));
+  protected readonly decorSaving = signal(false);
   protected dialog = false;
   protected editing: Theme | null = null;
   protected draftName = '';
@@ -142,10 +165,11 @@ export class ThemesAdminPage {
 
   protected load(): void {
     this.error.set(null);
-    forkJoin({ themes: this.api.themes(), settings: this.api.settings() }).subscribe({
-      next: ({ themes, settings }) => {
+    forkJoin({ themes: this.api.themes(), settings: this.api.settings(), decor: this.api.decor() }).subscribe({
+      next: ({ themes, settings, decor }) => {
         this.themes.set(themes);
         this.settings = settings;
+        this.decorKey.set(decor.decorKey);
       },
       error: (e) => this.error.set(apiErrorMessage(e)),
     });
@@ -191,6 +215,23 @@ export class ThemesAdminPage {
       },
       error: (e) => {
         this.settingsSaving.set(false);
+        this.messages.add({ severity: 'error', summary: apiErrorMessage(e) });
+      },
+    });
+  }
+
+  protected saveDecor(): void {
+    if (this.decorSaving()) return;
+    this.decorSaving.set(true);
+    this.api.saveDecor({ decorKey: this.decorKey() }).subscribe({
+      next: (d) => {
+        this.decorSaving.set(false);
+        this.decorKey.set(d.decorKey);
+        this.messages.add({ severity: 'success', summary: 'Zapisano motyw świąteczny' });
+        void this.themeService.load();
+      },
+      error: (e) => {
+        this.decorSaving.set(false);
         this.messages.add({ severity: 'error', summary: apiErrorMessage(e) });
       },
     });

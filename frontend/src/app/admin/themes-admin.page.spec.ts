@@ -3,6 +3,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { providePrimeNG } from 'primeng/config';
+import { decorTheme } from '../theme/decor-catalog';
 import { DEFAULT_THEMES } from '../theme/default-themes';
 import { ThemeService } from '../theme/theme.service';
 import { ThemesAdminPage } from './themes-admin.page';
@@ -23,6 +24,8 @@ type Page = {
   remove: (t: unknown) => void;
   load: () => void;
   startError: () => string | null;
+  decorKey: { (): string | null; set: (k: string | null) => void };
+  saveDecor: () => void;
 };
 
 function setup(themeService?: object) {
@@ -42,6 +45,7 @@ function setup(themeService?: object) {
 function flushInitial(http: HttpTestingController) {
   http.expectOne('/api/admin/themes').flush(all());
   http.expectOne('/api/admin/settings').flush({ themeMode: 'auto', manualThemeId: null });
+  http.expectOne('/api/admin/decor').flush({ decorKey: null });
 }
 
 describe('ThemesAdminPage', () => {
@@ -64,6 +68,7 @@ describe('ThemesAdminPage', () => {
     const live = http.match('/api/admin/settings').filter((r) => !r.cancelled);
     expect(live.length).toBe(1);
     live[0].flush({ themeMode: 'auto', manualThemeId: null });
+    http.match('/api/admin/decor').filter((r) => !r.cancelled).forEach((r) => r.flush({ decorKey: null }));
     f.detectChanges();
     expect(f.nativeElement.querySelector('[role=alert]')).toBeNull();
     expect(f.nativeElement.textContent).toContain('Mikołajki');
@@ -150,6 +155,82 @@ describe('ThemesAdminPage', () => {
     http.expectOne((r) => r.method === 'DELETE' && r.url === '/api/admin/themes/t9').flush(null);
     http.expectOne('/api/admin/themes').flush(all().slice(0, 4));
     http.expectOne('/api/admin/settings').flush({ themeMode: 'auto', manualThemeId: null });
+    http.expectOne('/api/admin/decor').flush({ decorKey: null });
     expect(ts.load).toHaveBeenCalled();
+  });
+
+  describe('holiday decor', () => {
+    const puts = (http: HttpTestingController, url: string) => http.match((r) => r.method === 'PUT' && r.url === url);
+
+    it('saves decor without touching palette settings', () => {
+      const { http, page } = setup();
+      flushInitial(http);
+      page.decorKey.set('easter');
+      page.saveDecor();
+      const [req] = puts(http, '/api/admin/decor');
+      expect(req.request.body).toEqual({ decorKey: 'easter' });
+      expect(puts(http, '/api/admin/settings').length).toBe(0);
+    });
+
+    it('saving palette settings does not send decor', () => {
+      const { http, page } = setup();
+      flushInitial(http);
+      page.saveSettings();
+      expect(puts(http, '/api/admin/settings').length).toBe(1);
+      expect(puts(http, '/api/admin/decor').length).toBe(0);
+    });
+
+    it('shows "Brak" in the select when no holiday theme is active', () => {
+      const { f, http } = setup();
+      flushInitial(http);
+      f.detectChanges();
+      const boxes = Array.from(f.nativeElement.querySelectorAll('fieldset')) as HTMLElement[];
+      const select = boxes.find((fs) => fs.textContent!.includes('Motyw świąteczny'))!.querySelector('p-select')!;
+      expect(select.textContent!.trim()).toContain('Brak');
+    });
+
+    it('allows clearing to Brak', () => {
+      const { http, page } = setup();
+      http.expectOne('/api/admin/themes').flush(all());
+      http.expectOne('/api/admin/settings').flush({ themeMode: 'auto', manualThemeId: null });
+      http.expectOne('/api/admin/decor').flush({ decorKey: 'easter' });
+      expect(page.decorKey()).toBe('easter');
+      page.decorKey.set(null);
+      page.saveDecor();
+      expect(puts(http, '/api/admin/decor')[0].request.body).toEqual({ decorKey: null });
+    });
+
+    it('shows thumbnails of the selected set only', () => {
+      const { f, http, page } = setup();
+      flushInitial(http);
+      f.detectChanges();
+      expect(f.nativeElement.querySelector('.decor-preview')).toBeNull();
+      page.decorKey.set('easter');
+      f.detectChanges();
+      const srcs = Array.from(f.nativeElement.querySelectorAll('.decor-preview img')).map((i) => (i as HTMLImageElement).getAttribute('src'));
+      expect(srcs).toEqual(decorTheme('easter')!.images);
+    });
+
+    it('reloads the public theme after saving and reports success', () => {
+      const ts = { apply: vi.fn(), load: vi.fn().mockResolvedValue(undefined) };
+      const { http, page } = setup(ts);
+      flushInitial(http);
+      const add = vi.spyOn(TestBed.inject(MessageService), 'add');
+      page.decorKey.set('christmas');
+      page.saveDecor();
+      puts(http, '/api/admin/decor')[0].flush({ decorKey: 'christmas' });
+      expect(add).toHaveBeenCalledWith(expect.objectContaining({ severity: 'success', summary: 'Zapisano motyw świąteczny' }));
+      expect(ts.load).toHaveBeenCalled();
+    });
+
+    it('shows error toast on save failure', () => {
+      const { http, page } = setup();
+      flushInitial(http);
+      const add = vi.spyOn(TestBed.inject(MessageService), 'add');
+      page.decorKey.set('easter');
+      page.saveDecor();
+      puts(http, '/api/admin/decor')[0].flush({ error: { message: 'Wybierz istniejący motyw świąteczny.' } }, { status: 400, statusText: 'x' });
+      expect(add).toHaveBeenCalledWith(expect.objectContaining({ severity: 'error' }));
+    });
   });
 });

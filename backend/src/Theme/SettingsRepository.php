@@ -34,4 +34,15 @@ final class SettingsRepository
             ['upsert' => true]
         );
     }
+
+    public function decorKey(): ?string
+    {
+        $key = ($this->col->findOne(['_id' => 'site']) ?? [])['decorKey'] ?? null;
+        return is_string($key) ? $key : null;
+    }
+
+    public function saveDecorKey(?string $key): void
+    {
+        $this->col->updateOne(['_id' => 'site'], ['$set' => ['decorKey' => $key]], ['upsert' => true]);
+    }
 }

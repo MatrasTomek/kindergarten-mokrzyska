@@ -88,6 +88,30 @@ final class ThemeService
         return $this->settings();
     }
 
+    /** @return array{decorKey:?string} */
+    public function decor(): array
+    {
+        $key = $this->settings->decorKey();
+        return ['decorKey' => $key !== null && DecorThemes::isKnown($key) ? $key : null];
+    }
+
+    /**
+     * @param array<string,mixed> $in
+     * @return array{decorKey:?string}
+     */
+    public function saveDecor(array $in): array
+    {
+        if (!array_key_exists('decorKey', $in)) {
+            throw ApiException::validation('Wybierz istniejący motyw świąteczny.');
+        }
+        $key = $in['decorKey'];
+        if ($key !== null && (!is_string($key) || !DecorThemes::isKnown($key))) {
+            throw ApiException::validation('Wybierz istniejący motyw świąteczny.');
+        }
+        $this->settings->saveDecorKey($key);
+        return $this->decor();
+    }
+
     /** @return array<string,string> */
     private function palette(mixed $palette): array
     {
