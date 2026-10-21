@@ -171,8 +171,64 @@ test('the accessibility toolbar is sticky on desktop but not on a phone (it woul
   await expectRendered(page, /^Publiczne Przedszkole Parafialne w Mokrzyskach/);
   expect(await position()).toBe('sticky');
   await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole('button', { name: 'Menu ułatwień dostępu' }).click();
   await page.getByRole('button', { name: 'Powiększ tekst' }).click();
   expect(await position()).toBe('static');
+});
+
+test('on a phone the accessibility toolbar shows only "Start" and a menu button that reveals the tools', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await expectRendered(page, /^Publiczne Przedszkole Parafialne w Mokrzyskach/);
+  const bar = page.getByRole('region', { name: 'Ułatwienia dostępu' });
+  const menu = bar.getByRole('button', { name: 'Menu ułatwień dostępu' });
+  await expect(bar.getByRole('link', { name: 'Start' })).toBeVisible();
+  await expect(menu).toHaveAttribute('aria-expanded', 'false');
+  await expect(bar.getByRole('button', { name: 'Wysoki kontrast' })).toBeHidden();
+  await menu.click();
+  await expect(bar.getByRole('button', { name: 'Wysoki kontrast' })).toBeVisible();
+  expect(await audit(page)).toEqual([]);
+  await page.keyboard.press('Escape');
+  await expect(menu).toHaveAttribute('aria-expanded', 'false');
+  await expect(menu).toBeFocused();
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await expect(menu).toBeHidden();
+  await expect(bar.getByRole('button', { name: 'Wysoki kontrast' })).toBeVisible();
+});
+
+test('the accessibility toolbar collapses to the menu exactly when its items no longer fit on one line', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto('/');
+  await expectRendered(page, /^Publiczne Przedszkole Parafialne w Mokrzyskach/);
+  const bar = page.getByRole('region', { name: 'Ułatwienia dostępu' });
+  const menu = bar.getByRole('button', { name: 'Menu ułatwień dostępu' });
+  // Widoczne elementy paska (bez ukrytych): wszystkie w jednej linii, czyli o wspólnym środku w pionie (wysokości są różne).
+  const tops = () =>
+    bar.evaluate((b) =>
+      [...b.querySelectorAll(':scope > a, :scope > button, .tools > *')]
+        .map((e) => e.getBoundingClientRect())
+        .filter((r) => r.width > 0)
+        .map((r) => Math.round(r.top + r.height / 2)),
+    );
+  await expect(menu).toBeHidden();
+  const collapsedAt: number[] = [];
+  for (let width = 1280; width >= 320; width -= 40) {
+    await page.setViewportSize({ width, height: 800 });
+    await expect.poll(async () => new Set(await tops()).size, { message: `one line at ${width}px` }).toBe(1);
+    if (await menu.isVisible()) collapsedAt.push(width);
+  }
+  // Zwija się tylko poniżej pewnej szerokości (i już nie rozwija przy węższych), a nie dopiero na telefonie.
+  expect(collapsedAt.length).toBeGreaterThan(0);
+  expect(collapsedAt[0]).toBeGreaterThan(768);
+  expect(collapsedAt).toEqual([...collapsedAt].sort((a, b) => b - a));
+  expect(collapsedAt.at(-1)).toBe(320);
+
+  // Większy tekst też może przestać się mieścić — przy tej samej szerokości pasek się zwija.
+  await page.setViewportSize({ width: collapsedAt[0] + 40, height: 800 });
+  await expect(menu).toBeHidden();
+  await bar.getByRole('button', { name: 'Powiększ tekst' }).click();
+  await expect(menu).toBeVisible();
+  await expect.poll(async () => new Set(await tops()).size).toBe(1);
 });
 
 test('post editor: admin has the a11y toolbar, Quill icons stay visible in high contrast, link tooltip is Polish', async ({ page }) => {

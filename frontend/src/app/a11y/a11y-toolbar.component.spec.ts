@@ -85,4 +85,28 @@ describe('A11yToolbarComponent', () => {
     expect(media.media.mediaText.replace(/\s+/g, '')).toBe('(max-width:48rem),(max-height:30rem)');
     expect(([...media.cssRules][0] as CSSStyleRule).style.position).toBe('static');
   });
+
+  it('the menu button toggles the tools; Escape closes it and returns focus', () => {
+    const f = render(true);
+    document.body.appendChild(f.nativeElement);
+    const toggle: HTMLButtonElement = f.nativeElement.querySelector('[data-test=menu-toggle]');
+    const tools: HTMLElement = f.nativeElement.querySelector('#a11y-tools');
+    // jsdom nie ma układu (ani ResizeObserver), więc pasek się nie zwija, a przycisk ma display:none i nie przyjmuje fokusu.
+    toggle.style.display = 'inline-flex';
+    expect(toggle.getAttribute('aria-controls')).toBe('a11y-tools');
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(tools.querySelector('a[href="/"]')).toBeNull();
+    toggle.click();
+    f.detectChanges();
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(tools.classList).toContain('open');
+    const contrast: HTMLButtonElement = tools.querySelector('[data-test=contrast]')!;
+    contrast.focus();
+    contrast.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    f.detectChanges();
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(tools.classList).not.toContain('open');
+    expect(document.activeElement).toBe(toggle);
+    f.nativeElement.remove();
+  });
 });
