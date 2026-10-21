@@ -27,23 +27,83 @@ import { TODAY } from '../theme/theme.service';
         <a routerLink="/kontakt">Kontakt</a>
       </nav>
       <p>© {{ year }} {{ siteName }}</p>
+      <a style="color: grey; " href="https://nd-soft.pl/" target="_blank" rel="noopener noreferrer"
+        >Projekt i wykonanie NDSOFT</a
+      >
     </footer>
   `,
   styles: `
-    :host { display: flex; flex-direction: column; min-height: 100vh; position: relative; }
+    :host {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      position: relative;
+    }
     /* Treść zawsze nad ilustracjami motywu świątecznego. */
-    .site-header, main, .site-footer { position: relative; z-index: 1; }
-    .site-header { max-width: 72rem; margin: 0 auto; width: 100%; box-sizing: border-box; padding: 1rem; }
-    .brand { display: flex; align-items: center; gap: 1rem; text-decoration: none; color: var(--app-text); }
-    .brand img { width: min(4.5rem, 20vw); height: auto; aspect-ratio: 1; object-fit: contain; flex: none; }
-    .brand-name { font-family: var(--font-head); font-size: clamp(1.25rem, 3vw, 2rem); font-weight: 800; line-height: 1.2; min-width: 0; overflow-wrap: break-word; }
-    main { flex: 1; outline: none; }
-    .site-footer { padding: 2rem 1rem; text-align: center; }
-    .site-footer--dark { background: var(--app-primary-900); color: #fff; }
-    .site-footer nav { display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap; font-weight: 700; }
-    .site-footer a { color: inherit; }
-    .site-footer a:focus-visible { outline-color: #fff; }
-    .site-footer p { margin: 1rem 0 0; opacity: .9; }
+    .site-header,
+    main,
+    .site-footer {
+      position: relative;
+      z-index: 1;
+    }
+    .site-header {
+      max-width: 72rem;
+      margin: 0 auto;
+      width: 100%;
+      box-sizing: border-box;
+      padding: 1rem;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      text-decoration: none;
+      color: var(--app-text);
+    }
+    .brand img {
+      width: min(4.5rem, 20vw);
+      height: auto;
+      aspect-ratio: 1;
+      object-fit: contain;
+      flex: none;
+    }
+    .brand-name {
+      font-family: var(--font-head);
+      font-size: clamp(1.25rem, 3vw, 2rem);
+      font-weight: 800;
+      line-height: 1.2;
+      min-width: 0;
+      overflow-wrap: break-word;
+    }
+    main {
+      flex: 1;
+      outline: none;
+    }
+    .site-footer {
+      padding: 2rem 1rem;
+      text-align: center;
+    }
+    .site-footer--dark {
+      background: var(--app-primary-900);
+      color: #fff;
+    }
+    .site-footer nav {
+      display: flex;
+      gap: 1.5rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      font-weight: 700;
+    }
+    .site-footer a {
+      color: inherit;
+    }
+    .site-footer a:focus-visible {
+      outline-color: #fff;
+    }
+    .site-footer p {
+      margin: 1rem 0 0;
+      opacity: 0.9;
+    }
   `,
 })
 export class PublicLayoutComponent {
