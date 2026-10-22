@@ -52,6 +52,7 @@ jobs:
 
           copilot \
             --agent=post-merge-review \
+            --model=gpt-5 \
             --available-tools='read, search' \
             --allow-tool='read, search' \
             --no-ask-user \
