@@ -29,10 +29,10 @@ describe('HomePage', () => {
     expect(el.querySelector('h1')!.textContent).toBe('Publiczne Przedszkole Parafialne w Mokrzyskach pw. Błogosławionej Karoliny Kózka');
   });
 
-  it('shows the site name as a visible heading on the banner', () => {
+  it('keeps the site name as a heading for screen readers only, outside the banner', () => {
     const h1 = render(null).querySelector('h1')!;
-    expect(h1.classList).not.toContain('sr-only');
-    expect(h1.closest('app-banner-slider')).not.toBeNull();
+    expect(h1.classList).toContain('sr-only');
+    expect(h1.closest('app-banner-slider')).toBeNull();
   });
 
   it('paints every tile in its section colour', () => {
@@ -40,11 +40,7 @@ describe('HomePage', () => {
     expect(links.map((a) => a.style.getPropertyValue('--section'))).toEqual(TILE_ORDER.map((k) => SECTIONS[k].color));
   });
 
-  it('labels the banner with the active theme name', () => {
-    expect(render({ name: 'Mikołajki' }).querySelector('app-banner-slider .tag')!.textContent).toContain('Mikołajki');
-  });
-
-  it('has no banner label before the theme is known', () => {
-    expect(render(null).querySelector('app-banner-slider .tag')).toBeNull();
+  it('shows no text on the banner, even with an active theme', () => {
+    expect(render({ name: 'Mikołajki' }).querySelector('app-banner-slider')!.textContent!.trim()).toBe('');
   });
 });

@@ -18,22 +18,22 @@ import { SECTIONS } from '../../core/sections';
     <div class="page" [style.--section]="section().color">
       @if (error()) {
         <p role="alert">{{ error() }}</p>
-      } @else if (!items()) {
+      } @else if (!view()) {
         <p aria-live="polite">Ładowanie…</p>
-      } @else if (items()!.length === 0) {
+      } @else if (view()!.length === 0) {
         <p>Treść w przygotowaniu.</p>
       } @else {
-        @for (item of items(); track item.id) {
+        @for (item of view(); track item.id) {
           <section>
             <h2>{{ item.title }}</h2>
             <div class="rich" [innerHTML]="item.body"></div>
-            @if (item.attachments.length) {
+            @if (item.files.length) {
               <ul class="attachments">
-                @for (a of item.attachments; track a.file) {
+                @for (a of item.files; track a.file) {
                   <li>
                     <i class="pi pi-file-pdf" aria-hidden="true"></i>
-                    <a [href]="url(a.file)" target="_blank" rel="noopener">{{ a.name }}<span class="sr-only"> (otwiera się w nowej karcie)</span></a>
-                    <span class="meta">(PDF, {{ size(a.size) }})</span>
+                    <a [href]="a.href" target="_blank" rel="noopener">{{ a.name }}<span class="sr-only"> (otwiera się w nowej karcie)</span></a>
+                    <span class="meta">(PDF, {{ a.sizeLabel }})</span>
                   </li>
                 }
               </ul>
@@ -63,10 +63,16 @@ export class ContentPageComponent {
   readonly page = input.required<ContentPageSlug>();
   readonly heading = input.required<string>();
   protected readonly section = computed(() => SECTIONS[this.page()]);
-  protected readonly items = signal<ContentItem[] | null>(null);
+  private readonly items = signal<ContentItem[] | null>(null);
+  /** Adresy i rozmiary załączników liczone raz po wczytaniu, nie przy każdym przebiegu wykrywania zmian. */
+  protected readonly view = computed(
+    () =>
+      this.items()?.map((item) => ({
+        ...item,
+        files: item.attachments.map((a) => ({ ...a, href: uploadUrl(a.file), sizeLabel: formatSize(a.size) })),
+      })) ?? null,
+  );
   protected readonly error = signal<string | null>(null);
-  protected readonly url = uploadUrl;
-  protected readonly size = formatSize;
 
   constructor() {
     effect((onCleanup) => {
