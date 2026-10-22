@@ -1,0 +1,76 @@
+name: Copilot post-merge review
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+  copilot-requests: write
+
+jobs:
+  review:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out merged revision
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          fetch-depth: 0
+
+      - name: Install GitHub Copilot CLI
+        run: npm install --global @github/copilot
+
+      - name: Review merged changes
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+
+          diff_file=".post-merge-review.diff"
+          report_file="${RUNNER_TEMP}/post-merge-review.txt"
+          trap 'rm -f "$diff_file"' EXIT
+
+          gh pr diff "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" > "$diff_file"
+
+          if [[ ! -s "$diff_file" ]]; then
+            echo "The merged pull request produced an empty diff; refusing to report a successful review." >&2
+            exit 1
+          fi
+
+          prompt="$(printf '%s\n' \
+            "Review merged pull request #${PR_NUMBER}." \
+            "The pull request diff is in ${diff_file}. Read it and any directly relevant surrounding files in the checked-out merged revision." \
+            "Follow all five ordered stages and the evidence/output requirements in the post-merge-review agent instructions." \
+            "Do not modify files or claim that tests were run.")"
+
+          copilot \
+            --agent=post-merge-review \
+            --available-tools='read, search' \
+            --allow-tool='read, search' \
+            --no-ask-user \
+            -s \
+            -p "$prompt" > "$report_file"
+
+          if [[ ! -s "$report_file" ]]; then
+            echo "Copilot completed without producing a review report." >&2
+            exit 1
+          fi
+
+          printf '%s\n' \
+            "Copilot's read-only review of pull request #${PR_NUMBER} is complete." \
+            "Download the \`post-merge-review\` artifact for the five-stage report." \
+            >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload review report
+        uses: actions/upload-artifact@v4
+        with:
+          name: post-merge-review
+          path: ${{ runner.temp }}/post-merge-review.txt
+          if-no-files-found: error

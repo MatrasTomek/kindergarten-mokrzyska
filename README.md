@@ -51,6 +51,12 @@ docker compose run --rm php vendor/bin/phpunit           # testy backendu
 cd frontend && npm run e2e                               # testy e2e (Playwright; sam startuje backend na :8081 z osobną bazą przedszkole_e2e)
 ```
 
+### Przegląd Copilot po merge'u
+
+Workflow `.github/workflows/copilot-post-merge-review.yml` uruchamia GitHub Copilot CLI po scaleniu PR-a do `main`. Agent przegląda zmiany kolejno pod kątem bezpieczeństwa danych, bezpieczeństwa aplikacji, bezpieczeństwa użytkowników, wydajności i niezawodności oraz funkcji wywoływanych z HTML i pętli. Raport jest artefaktem uruchomienia w zakładce **Actions**.
+
+Workflow jest tylko do odczytu: agent nie zmienia kodu ani nie publikuje komentarzy. Wymaga włączonej w ustawieniach organizacji polityki Copilot CLI dla GitHub Actions i dostępu do Copilot Requests. Uprawnienia workflow są ograniczone do `contents: read`, `pull-requests: read` i `copilot-requests: write`. Jeśli domyślna gałąź repozytorium zmieni nazwę z `main`, zaktualizuj filtr gałęzi w workflow.
+
 ## Produkcja (OVH + MongoDB Atlas)
 
 Hosting współdzielony OVH (bez SSH i Node) — paczkę buduje się lokalnie i wgrywa FileZillą.
