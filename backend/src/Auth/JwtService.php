@@ -24,10 +24,33 @@ final class JwtService
         return JWT::encode(['sub' => $userId, 'role' => $role, 'typ' => 'access', 'iat' => $now, 'exp' => $now + self::ACCESS_TTL], $this->config->jwtSecret, 'HS256');
     }
 
-    public function issueRefresh(string $userId): string
+    /** `$expiresAt` (unix): koniec sesji — stały od logowania, rotacja go nie przesuwa. */
+    public function issueRefresh(string $userId, string $sessionId, string $jti, int $expiresAt): string
     {
         $now = $this->clock->now()->getTimestamp();
-        return JWT::encode(['sub' => $userId, 'typ' => 'refresh', 'iat' => $now, 'exp' => $now + self::REFRESH_TTL], $this->config->jwtSecret, 'HS256');
+        return JWT::encode(
+            ['sub' => $userId, 'sid' => $sessionId, 'jti' => $jti, 'typ' => 'refresh', 'iat' => $now, 'exp' => $expiresAt],
+            $this->config->jwtSecret,
+            'HS256'
+        );
+    }
+
+    public static function newJti(): string
+    {
+        return bin2hex(random_bytes(16));
+    }
+
+    /**
+     * Token wydany przed zmianą hasła jest unieważniony (porównanie co do sekundy: iat >= changedAt jest ważny).
+     *
+     * @param array<string,mixed> $claims
+     * @param array<string,mixed> $user
+     */
+    public static function issuedBeforePasswordChange(array $claims, array $user): bool
+    {
+        $changedAt = $user['passwordChangedAt'] ?? null;
+        return $changedAt instanceof \MongoDB\BSON\UTCDateTime
+            && (int) ($claims['iat'] ?? 0) < intdiv((int) $changedAt->__toString(), 1000);
     }
 
     /** @return array<string,mixed> */

@@ -5,6 +5,7 @@ import { execSync } from 'node:child_process';
 import { chmodSync, cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { contentSecurityPolicy, inlineHashes } from './csp.mjs';
 import { printResults, verifyPackage } from './verify-package.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -43,7 +44,9 @@ const browser = join(root, 'frontend/dist/frontend/browser');
 const fallback = 'index.csr.html';
 if (!existsSync(join(browser, fallback))) fail(`brak ${fallback} w buildzie — sprawdź outputMode/prerender w angular.json`);
 cpSync(browser, out, { recursive: true });
-writeFileSync(join(out, '.htaccess'), tpl('root.htaccess').replaceAll('__FALLBACK__', fallback));
+// CSP liczona z HTML tego buildu (hashe skryptów inline) — przed dodaniem api/ i uploads/.
+const csp = contentSecurityPolicy(inlineHashes(out));
+writeFileSync(join(out, '.htaccess'), tpl('root.htaccess').replaceAll('__FALLBACK__', fallback).replaceAll('__CSP__', csp));
 writeFileSync(join(out, '.ovhconfig'), tpl('.ovhconfig'));
 
 console.log('2/5 Backend');

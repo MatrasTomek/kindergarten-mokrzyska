@@ -1,4 +1,5 @@
-# /.htaccess nowej strony (generowany przez scripts/package.mjs, który wstawia nazwę pliku fallbacku SPA).
+# /.htaccess nowej strony (generowany przez scripts/package.mjs, który wstawia nazwę pliku fallbacku SPA
+# i politykę CSP z hashami skryptów inline z bieżącego buildu — nie edytuj CSP ręcznie na serwerze).
 # Założenie: ten katalog jest katalogiem głównym (DocumentRoot) domeny nowej strony — osobny wpis
 # multisite w OVH. Reguły dotyczą tylko tego katalogu i podkatalogów; stara strona w innym folderze
 # nie jest dotknięta. NIE wgrywaj tego pliku do folderu starej strony.
@@ -46,4 +47,11 @@ RewriteRule ^ /__FALLBACK__ [L]
   </FilesMatch>
   Header always set X-Content-Type-Options "nosniff"
   Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Content-Security-Policy "__CSP__"
+  # HSTS bez includeSubDomains/preload: inne subdomeny tej domeny mogą nie mieć HTTPS. Przeglądarka ignoruje
+  # ten nagłówek po zwykłym HTTP, więc zadziała dopiero po przekierowaniu na https.
+  Header always set Strict-Transport-Security "max-age=31536000"
+  Header always set X-Frame-Options "DENY"
+  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+  Header always set Cross-Origin-Opener-Policy "same-origin"
 </IfModule>

@@ -41,5 +41,7 @@ final class Database
         $this->collection('themes')->createIndex(['key' => 1], ['unique' => true]);
         $this->collection('login_attempts')->createIndex(['createdAt' => 1], ['expireAfterSeconds' => 900]);
         $this->collection('login_attempts')->createIndex(['key' => 1]);
+        $this->collection('sessions')->createIndex(['userId' => 1]);
+        $this->collection('sessions')->createIndex(['expiresAt' => 1]);
     }
 }

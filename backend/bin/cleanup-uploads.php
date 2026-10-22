@@ -4,7 +4,7 @@ declare(strict_types=1);
 // Cron OVH (raz na dobę): php api/bin/cleanup-uploads.php   |   test: --dry-run
 $root = dirname(__DIR__);
 require $root . '/vendor/autoload.php';
-Dotenv\Dotenv::createImmutable($root)->safeLoad(); // safeLoad: brak .env nie jest błędem (zmienne z `docker run -e`)
+App\EnvFile::load($root); // ten sam plik konfiguracji co index.php
 
 $config = App\Config::fromEnv($_ENV + $_SERVER); // $_SERVER: zmienne z `docker run -e` (Dotenv ich nie nadpisuje)
 $cleaner = new App\Upload\UploadCleaner(App\Database::connect($config), $config, new App\Support\SystemClock());

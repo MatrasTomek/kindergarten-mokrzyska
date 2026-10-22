@@ -10,13 +10,13 @@ final class RefreshCookie
 {
     public const NAME = 'refresh_token';
 
-    public static function set(ResponseInterface $res, string $token): ResponseInterface
+    public static function set(ResponseInterface $res, string $token, int $maxAge = JwtService::REFRESH_TTL): ResponseInterface
     {
         return $res->withAddedHeader('Set-Cookie', sprintf(
             '%s=%s; Path=/api/auth; Max-Age=%d; HttpOnly; Secure; SameSite=Strict',
             self::NAME,
             $token,
-            JwtService::REFRESH_TTL
+            $maxAge
         ));
     }
 

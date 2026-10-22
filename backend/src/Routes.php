@@ -30,7 +30,7 @@ final class Routes
             $g->group('', function (RouteCollectorProxy $a) use ($s) {
                 self::adminRoutes($a, $s);
             })->add(new RoleMiddleware('admin'));
-        })->add(new AuthMiddleware($s->jwt));
+        })->add(new AuthMiddleware($s->jwt, $s->users));
     }
 
     /** Trasy publiczne (bez logowania). */

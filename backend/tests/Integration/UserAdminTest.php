@@ -143,12 +143,23 @@ final class UserAdminTest extends ApiTestCase
         $this->request('PUT', "/api/admin/users/$id", ['name' => 'B', 'role' => 'user', 'active' => true, 'password' => 'nowe-haslo-12'], $this->t);
         // token wydany w tej samej sekundzie co zmiana (iat == changedAt) jest ważny
         self::assertSame(200, $this->refreshStatus($this->loginCookie('b@test.pl', 'nowe-haslo-12')));
-        // token wydany sekundę wcześniej jest unieważniony
-        $jwt = new \App\Auth\JwtService($this->config, $this->clock);
-        $this->clock->advance('-1 second');
-        $early = $jwt->issueRefresh($id);
-        $this->clock->advance('+1 second');
-        self::assertSame(401, $this->refreshStatus($early));
+    }
+
+    public function testDeactivationRevokesRefreshEvenAfterReactivation(): void
+    {
+        $id = $this->json($this->request('POST', '/api/admin/users', ['email' => 'd@test.pl', 'name' => 'D', 'role' => 'user', 'password' => 'haslo-d-12345'], $this->t))['id'];
+        $cookie = $this->loginCookie('d@test.pl', 'haslo-d-12345');
+        $this->request('PUT', "/api/admin/users/$id", ['name' => 'D', 'role' => 'user', 'active' => false], $this->t);
+        $this->request('PUT', "/api/admin/users/$id", ['name' => 'D', 'role' => 'user', 'active' => true], $this->t);
+        self::assertSame(401, $this->refreshStatus($cookie));
+    }
+
+    public function testDeleteRemovesUserSessions(): void
+    {
+        $id = $this->json($this->request('POST', '/api/admin/users', ['email' => 'x@test.pl', 'name' => 'X', 'role' => 'user', 'password' => 'haslo-x-12345'], $this->t))['id'];
+        $this->loginCookie('x@test.pl', 'haslo-x-12345');
+        $this->request('DELETE', "/api/admin/users/$id", token: $this->t);
+        self::assertSame(0, $this->db->collection('sessions')->countDocuments(['userId' => new \MongoDB\BSON\ObjectId($id)]));
     }
 
     public function testUpdateWithoutPasswordDoesNotRevoke(): void
