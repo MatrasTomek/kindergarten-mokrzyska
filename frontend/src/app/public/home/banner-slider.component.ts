@@ -8,6 +8,8 @@ export const SLIDE_INTERVAL_MS = 6000;
 
 const NAMES: Record<SeasonKey, string> = { spring: 'Wiosna', summer: 'Lato', autumn: 'Jesień', winter: 'Zima' };
 const img = (s: SeasonKey, w: number): string => `url(/images/start/${s}-${w}.webp)`;
+/** Adresy obrazków liczone raz przy ładowaniu modułu, nie przy każdym przebiegu wykrywania zmian. */
+const SLIDES = SLIDE_ORDER.map((key) => ({ key, img768: img(key, 768), img1280: img(key, 1280), img1920: img(key, 1920) }));
 
 /**
  * Pokaz slajdów banera strony głównej: 4 ilustracje budynku, start od pory roku z html[data-season] (pre-paint),
@@ -25,14 +27,14 @@ const img = (s: SeasonKey, w: number): string => `url(/images/start/${s}-${w}.we
   },
   template: `
     <div class="slides" [class.is-ready]="ready" aria-hidden="true">
-      @for (s of slides; track s; let i = $index) {
+      @for (s of slideImages; track s.key; let i = $index) {
         <div
-          class="slide slide--{{ s }}"
+          class="slide slide--{{ s.key }}"
           [class.is-active]="i === index()"
-          [class.is-deferred]="deferred(i)"
-          [style.--img-768]="img(s, 768)"
-          [style.--img-1280]="img(s, 1280)"
-          [style.--img-1920]="img(s, 1920)"
+          [class.is-deferred]="!loaded() && i !== start"
+          [style.--img-768]="s.img768"
+          [style.--img-1280]="s.img1280"
+          [style.--img-1920]="s.img1920"
         ></div>
       }
     </div>
@@ -111,19 +113,18 @@ export class BannerSliderComponent {
 
   protected readonly slides = SLIDE_ORDER;
   protected readonly names = NAMES;
-  protected readonly img = img;
+  protected readonly slideImages = SLIDES;
   /** Klasa is-ready: od teraz aktywny slajd wybiera komponent, nie CSS z html[data-season]. */
   protected readonly ready = this.browser;
 
-  private readonly start = this.browser ? this.startIndex() : -1;
+  protected readonly start = this.browser ? this.startIndex() : -1;
   private readonly _index = signal(Math.max(this.start, 0));
   readonly index = this._index.asReadonly();
   private readonly _paused = signal(false);
   readonly paused = this._paused.asReadonly();
-  private readonly loaded = signal(this.browser && this.doc.readyState === 'complete');
+  protected readonly loaded = signal(this.browser && this.doc.readyState === 'complete');
   private readonly holds = { hover: false, focus: false };
   private timer: ReturnType<typeof setTimeout> | undefined;
-  protected readonly deferred = (i: number): boolean => !this.loaded() && i !== this.start;
 
   constructor() {
     if (!this.browser) return;

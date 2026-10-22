@@ -1,7 +1,6 @@
-import { Component, inject } from '@angular/core';
+import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { SITE_NAME } from '../../core/config';
-import { ThemeService } from '../../theme/theme.service';
 import { BannerSliderComponent } from './banner-slider.component';
 import { TILES } from './tiles';
 
@@ -9,14 +8,9 @@ import { TILES } from './tiles';
   selector: 'app-home-page',
   imports: [RouterLink, BannerSliderComponent],
   template: `
-    <app-banner-slider>
-      <!-- <div class="hero-text">
-        @if (theme.current(); as t) {
-          <span class="tag hero-tag">{{ t.name }}</span>
-        }
-        <h1>{{ siteName }}</h1>
-      </div> -->
-    </app-banner-slider>
+    <!-- Baner jest samą ilustracją; nagłówek strony zostaje dla czytników ekranu. -->
+    <h1 class="sr-only">{{ siteName }}</h1>
+    <app-banner-slider />
     <div class="page">
       <nav aria-label="Działy strony">
         <ul class="tiles">
@@ -33,35 +27,6 @@ import { TILES } from './tiles';
     </div>
   `,
   styles: `
-    .hero-text {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-end;
-      align-items: flex-start;
-      gap: 0.5rem;
-      padding: 1.5rem max(1rem, calc((100% - 70rem) / 2)) 4.75rem;
-      box-sizing: border-box;
-      background: linear-gradient(transparent 35%, rgba(0, 0, 0, 0.6));
-    }
-    .hero-tag {
-      --section: #fff;
-      --tag-fg: #1f2937;
-    }
-    h1 {
-      margin: 0;
-      max-width: 46rem;
-      color: #fff;
-      font-size: clamp(1.5rem, 3.6vw, 2.75rem);
-      text-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
-    }
-    :host-context(html.a11y-contrast) .hero-text {
-      background: none;
-    }
-    :host-context(html.a11y-contrast) h1 {
-      padding: 0.25rem 0.75rem;
-    }
-
     .page {
       padding-top: 2rem;
     }
@@ -140,5 +105,4 @@ import { TILES } from './tiles';
 export class HomePage {
   protected readonly siteName = SITE_NAME;
   protected readonly tiles = TILES;
-  protected readonly theme = inject(ThemeService);
 }

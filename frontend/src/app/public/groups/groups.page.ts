@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { PublicApi } from '../../core/api/public-api';
 import { apiErrorMessage } from '../../core/api-error';
@@ -14,12 +14,12 @@ import { PageHeaderComponent } from '../../shared/page-header.component';
     <div class="page">
       @if (error()) {
         <p role="alert">{{ error() }}</p>
-      } @else if (!groups()) {
+      } @else if (!cards()) {
         <p aria-live="polite">Ładowanie…</p>
       } @else {
         <ul class="groups">
-          @for (g of groups(); track g.id; let i = $index) {
-            <li><a [routerLink]="['/grupy', g.slug]" [style.--section]="color(i)"><i class="pi pi-users" aria-hidden="true"></i> {{ g.name }}</a></li>
+          @for (g of cards(); track g.id) {
+            <li><a [routerLink]="['/grupy', g.slug]" [style.--section]="g.color"><i class="pi pi-users" aria-hidden="true"></i> {{ g.name }}</a></li>
           }
         </ul>
       }
@@ -39,8 +39,9 @@ import { PageHeaderComponent } from '../../shared/page-header.component';
 })
 export class GroupsPage {
   protected readonly section = SECTIONS.grupy;
-  protected readonly color = groupColor;
-  protected readonly groups = signal<Group[] | null>(null);
+  private readonly groups = signal<Group[] | null>(null);
+  /** Kolor kafelka liczony raz na listę, nie przy każdym przebiegu wykrywania zmian. */
+  protected readonly cards = computed(() => this.groups()?.map((g, i) => ({ ...g, color: groupColor(i) })) ?? null);
   protected readonly error = signal<string | null>(null);
 
   constructor() {
