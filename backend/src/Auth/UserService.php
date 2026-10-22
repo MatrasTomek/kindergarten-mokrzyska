@@ -12,8 +12,11 @@ use MongoDB\BSON\ObjectId;
 
 final class UserService
 {
-    public function __construct(private readonly UserRepository $users, private readonly Clock $clock)
-    {
+    public function __construct(
+        private readonly UserRepository $users,
+        private readonly SessionRepository $sessions,
+        private readonly Clock $clock,
+    ) {
     }
 
     /**
@@ -63,6 +66,10 @@ final class UserService
             $set['passwordChangedAt'] = Dates::now($this->clock);
         }
         $this->users->update($id, $set);
+        // Nowe hasło albo dezaktywacja: wylogowanie ze wszystkich urządzeń (tokeny odświeżania przestają działać).
+        if (isset($set['passwordHash']) || !$set['active']) {
+            $this->sessions->deleteForUser($id);
+        }
         return (array) $this->users->findById($id);
     }
 
@@ -73,6 +80,7 @@ final class UserService
         }
         $this->users->findById($id) ?? throw ApiException::notFound();
         $this->users->delete($id);
+        $this->sessions->deleteForUser($id);
     }
 
     /** @param array<string,mixed> $in */

@@ -34,7 +34,7 @@ final class AdminAccessTest extends ApiTestCase
     public function testRefreshTokenCannotBeUsedAsAccessToken(): void
     {
         $id = $this->createUser('admin');
-        $refresh = (new \App\Auth\JwtService($this->config, $this->clock))->issueRefresh($id);
+        $refresh = (new \App\Auth\JwtService($this->config, $this->clock))->issueRefresh($id, (string) new \MongoDB\BSON\ObjectId(), 'jti', time() + 3600);
         self::assertSame(401, $this->request('GET', '/api/admin/me', token: $refresh)->getStatusCode());
     }
 
@@ -54,5 +54,42 @@ final class AdminAccessTest extends ApiTestCase
         $req = (new ServerRequestFactory())->createServerRequest('GET', '/api/admin/me', $server)
             ->withHeader('Authorization', (string) ($server['HTTP_AUTHORIZATION'] ?? ''));
         self::assertSame(200, $this->app->handle($req)->getStatusCode());
+    }
+
+    public function testDeactivatedUserLosesAccessImmediately(): void
+    {
+        $id = $this->createUser('user');
+        $token = $this->tokenFor($id, 'user');
+        $this->db->collection('users')->updateOne(['_id' => new \MongoDB\BSON\ObjectId($id)], ['$set' => ['active' => false]]);
+        self::assertSame(401, $this->request('GET', '/api/admin/me', token: $token)->getStatusCode());
+    }
+
+    public function testDeletedUserTokenRejected(): void
+    {
+        $id = $this->createUser('admin');
+        $token = $this->tokenFor($id, 'admin');
+        $this->db->collection('users')->deleteOne(['_id' => new \MongoDB\BSON\ObjectId($id)]);
+        self::assertSame(401, $this->request('GET', '/api/admin/me', token: $token)->getStatusCode());
+    }
+
+    public function testRoleComesFromDatabaseNotToken(): void
+    {
+        // np. admin odebrał komuś uprawnienia — stary token z rolą admin nie otwiera tras admina
+        $id = $this->createUser('user');
+        self::assertSame(403, $this->request('GET', '/api/admin/users', token: $this->tokenFor($id, 'admin'))->getStatusCode());
+    }
+
+    public function testAccessTokenIssuedBeforePasswordChangeRejected(): void
+    {
+        $id = $this->createUser('user');
+        $old = $this->tokenFor($id, 'user');
+        $this->clock->advance('+1 second');
+        $this->db->collection('users')->updateOne(
+            ['_id' => new \MongoDB\BSON\ObjectId($id)],
+            ['$set' => ['passwordChangedAt' => \App\Support\Dates::now($this->clock)]]
+        );
+        self::assertSame(401, $this->request('GET', '/api/admin/me', token: $old)->getStatusCode());
+        // wydany w tej samej sekundzie co zmiana hasła — ważny
+        self::assertSame(200, $this->request('GET', '/api/admin/me', token: $this->tokenFor($id, 'user'))->getStatusCode());
     }
 }

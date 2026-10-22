@@ -6,6 +6,7 @@ namespace App;
 use App\Auth\AuthController;
 use App\Auth\JwtService;
 use App\Auth\LoginRateLimiter;
+use App\Auth\SessionRepository;
 use App\Auth\UserController;
 use App\Auth\UserRepository;
 use App\Auth\UserService;
@@ -37,6 +38,7 @@ final class Services
     public readonly ThemeResolver $themeResolver;
     public readonly ThemeController $themeController;
     public readonly UserRepository $users;
+    public readonly SessionRepository $sessions;
     public readonly UserController $userController;
     public readonly JwtService $jwt;
     public readonly AuthController $authController;
@@ -64,9 +66,10 @@ final class Services
             new ThemeService($this->themes, $this->settings)
         );
         $this->users = new UserRepository($db);
-        $this->userController = new UserController($this->users, new UserService($this->users, $clock));
+        $this->sessions = new SessionRepository($db);
+        $this->userController = new UserController($this->users, new UserService($this->users, $this->sessions, $clock));
         $this->jwt = new JwtService($config, $clock);
-        $this->authController = new AuthController($this->users, $this->jwt, new LoginRateLimiter($db, $clock));
+        $this->authController = new AuthController($this->users, $this->sessions, $this->jwt, new LoginRateLimiter($db, $clock), $clock);
         $this->uploads = new UploadService($config, $clock);
         $this->uploadController = new UploadController($this->uploads);
         $this->groups = new GroupRepository($db);

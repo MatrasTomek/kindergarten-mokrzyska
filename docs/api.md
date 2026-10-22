@@ -48,8 +48,14 @@ interface UploadedImage { file: string; thumb: string; w: number; h: number }
 | Metoda | Ścieżka | Body | Odpowiedź |
 |---|---|---|---|
 | POST | `/api/auth/login` | `{email, password}` | `LoginResponse` + cookie `refresh_token` |
-| POST | `/api/auth/refresh` | — (cookie) | `LoginResponse` |
-| POST | `/api/auth/logout` | — | 204, czyści cookie |
+| POST | `/api/auth/refresh` | — (cookie) | `LoginResponse` + nowe cookie `refresh_token` (rotacja) |
+| POST | `/api/auth/logout` | — (cookie) | 204, unieważnia sesję i czyści cookie |
+
+Sesje (kolekcja `sessions`, jedna na logowanie): cookie wygasa 14 dni po logowaniu (rotacja tego nie przedłuża).
+Każde odświeżenie wydaje nowy token; poprzedni jest przyjmowany jeszcze przez 30 s (równoległe odświeżenia z kilku kart),
+a użyty później zamyka całą sesję (401 — możliwa kradzież ciasteczka). Zmiana hasła, dezaktywacja i usunięcie konta
+unieważniają wszystkie sesje użytkownika. Trasy panelu przy każdym żądaniu sprawdzają konto w bazie: rola z bazy
+(nie z tokenu), konto nieaktywne/usunięte albo token sprzed zmiany hasła → 401.
 
 ## Panel (nagłówek `Authorization: Bearer <accessToken>`)
 

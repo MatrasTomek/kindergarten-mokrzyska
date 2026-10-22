@@ -4,10 +4,20 @@ import assert from 'node:assert/strict';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
+import { contentSecurityPolicy, inlineHashes } from './csp.mjs';
 import { PRERENDERED_ROUTES, verifyPackage } from './verify-package.mjs';
 
 const ASSETS_404 = 'RewriteRule \\.(js|css|map|woff2?|png|jpe?g|webp|svg|ico|json)$ - [NC,R=404,L]';
-const ROOT_HTACCESS = `RewriteEngine On\nRewriteCond %{REQUEST_FILENAME} -f\nRewriteRule ^ - [L]\n${ASSETS_404}\nRewriteRule ^ /index.csr.html [L]\n`;
+const securityHeaders = (csp) =>
+  `<IfModule mod_headers.c>\n  Header always set Content-Security-Policy "${csp}"\n` +
+  '  Header always set Strict-Transport-Security "max-age=31536000"\n  Header always set X-Frame-Options "DENY"\n</IfModule>\n';
+const ROOT_HTACCESS =
+  `RewriteEngine On\nRewriteCond %{REQUEST_FILENAME} -f\nRewriteRule ^ - [L]\n${ASSETS_404}\nRewriteRule ^ /index.csr.html [L]\n` +
+  securityHeaders(contentSecurityPolicy({ scripts: [], handlers: [] }));
+const HEADERS_CHECK = '.htaccess: nagłówki bezpieczeństwa (CSP, HSTS, X-Frame-Options)';
+const CSP_CHECK = '.htaccess: CSP obejmuje wszystkie skrypty inline z HTML';
+const PREPAINT = '<script id="prepaint">\n  document.documentElement.dataset.x = "1";\n</script>';
+const ONLOAD = `<link rel="stylesheet" href="styles.css" media="print" onload="this.media='all'">`;
 const ASSETS_CHECK = '.htaccess: brakujące pliki statyczne (js, css, map, czcionki, obrazki, json) → 404, nie fallback SPA';
 const API_HTACCESS = [
   'RewriteCond %{HTTPS} !=on',
@@ -84,7 +94,13 @@ const cases = [
   ['prerender panelu admina', { 'admin/index.html': '<html>' }, 'brak admin/'],
   ['prerender trasy wpisu', { 'wpis/x/index.html': '<html>' }, 'brak wpis/'],
   ['fallback na index.html', { '.htaccess': ROOT_HTACCESS.replace('/index.csr.html', '/index.html') }, '.htaccess: fallback SPA na /index.csr.html'],
-  ['brak .htaccess', { '.htaccess': null }, '.htaccess: fallback SPA na /index.csr.html', ASSETS_CHECK],
+  ['brak .htaccess', { '.htaccess': null }, '.htaccess: fallback SPA na /index.csr.html', ASSETS_CHECK, HEADERS_CHECK],
+  ['brak HSTS', { '.htaccess': ROOT_HTACCESS.replace(/^.*Strict-Transport-Security.*$/m, '') }, HEADERS_CHECK],
+  ['brak X-Frame-Options', { '.htaccess': ROOT_HTACCESS.replace(/^.*X-Frame-Options.*$/m, '') }, HEADERS_CHECK],
+  ['CSP bez frame-ancestors', { '.htaccess': ROOT_HTACCESS.replace("; frame-ancestors 'none'", '') }, HEADERS_CHECK],
+  ['CSP z unsafe-inline w script-src', { '.htaccess': ROOT_HTACCESS.replace("script-src 'self'", "script-src 'self' 'unsafe-inline'") }, HEADERS_CHECK],
+  ['skrypt inline bez hasha w CSP', { 'index.html': PREPAINT }, CSP_CHECK],
+  ['handler onload bez hasha w CSP', { 'kontakt/index.html': ONLOAD }, CSP_CHECK],
   ['brak reguły 404 dla plików statycznych', { '.htaccess': ROOT_HTACCESS.replace(`${ASSETS_404}\n`, '') }, ASSETS_CHECK],
   ['reguła 404 bez .map', { '.htaccess': ROOT_HTACCESS.replace('|map', '') }, ASSETS_CHECK],
   ['reguła 404 po fallbacku SPA (nigdy nie zadziała)', { '.htaccess': ROOT_HTACCESS.replace(`${ASSETS_404}\n`, '') + `${ASSETS_404}\n` }, ASSETS_CHECK],
@@ -119,6 +135,23 @@ for (const [name, overrides, ...expected] of cases) {
     assert.deepEqual(failuresFor(overrides), expected);
   });
 }
+
+test('CSP z hashami z HTML paczki przechodzi; JSON i skrypty z src nie wymagają hasha', () => {
+  const html = `${PREPAINT}\n${ONLOAD}\n<script src="main.js" type="module"></script>\n<script id="ng-state" type="application/json">{"a":1}</script>`;
+  const dir = makePackage({ 'index.html': html, 'index.csr.html': html.replaceAll('\n', '\r\n') });
+  try {
+    const hashes = inlineHashes(dir);
+    // CRLF i LF dają ten sam hash (przeglądarka normalizuje końce linii)
+    assert.equal(hashes.scripts.length, 1);
+    assert.equal(hashes.handlers.length, 1);
+    const csp = contentSecurityPolicy(hashes);
+    assert.match(csp, /script-src 'self' 'unsafe-hashes' 'sha256-/);
+    writeFileSync(join(dir, '.htaccess'), ROOT_HTACCESS.replace(/Content-Security-Policy "[^"]*"/, `Content-Security-Policy "${csp}"`));
+    assert.deepEqual(verifyPackage(dir).filter((r) => !r.ok), []);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
 
 test('nieistniejący katalog paczki = wszystko niezaliczone, bez wyjątku', () => {
   const results = verifyPackage(join(tmpdir(), 'nie-ma-takiego-katalogu-pkg'));

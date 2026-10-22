@@ -26,6 +26,17 @@ final class AuthTest extends ApiTestCase
         return $m[1];
     }
 
+    private function refresh(string $cookie): \Psr\Http\Message\ResponseInterface
+    {
+        return $this->request('POST', '/api/auth/refresh', cookies: ['refresh_token' => $cookie]);
+    }
+
+    private function loginCookie(): string
+    {
+        $this->createUser('admin', 'a@test.pl');
+        return $this->refreshCookieFrom($this->login('a@test.pl', 'haslo-testowe-123'));
+    }
+
     public function testLoginReturnsAccessTokenAndRefreshCookie(): void
     {
         $id = $this->createUser('user', 'nauczyciel@test.pl');
@@ -119,5 +130,72 @@ final class AuthTest extends ApiTestCase
         $res = $this->request('POST', '/api/auth/logout');
         self::assertSame(204, $res->getStatusCode());
         self::assertStringContainsString('Max-Age=0', $res->getHeaderLine('Set-Cookie'));
+    }
+
+    public function testRefreshRotatesTokenKeepingSessionExpiry(): void
+    {
+        $old = $this->loginCookie();
+        $sessionEnd = $this->clock->now()->getTimestamp() + 14 * 86400;
+        $this->clock->advance('+10 days');
+        $res = $this->refresh($old);
+        self::assertSame(200, $res->getStatusCode());
+        $new = $this->refreshCookieFrom($res);
+        self::assertNotSame($old, $new);
+        // sesja kończy się 14 dni po logowaniu — rotacja jej nie przedłuża
+        $maxAge = $sessionEnd - $this->clock->now()->getTimestamp();
+        self::assertStringContainsString("Max-Age=$maxAge;", $res->getHeaderLine('Set-Cookie'));
+        self::assertSame(200, $this->refresh($new)->getStatusCode());
+    }
+
+    public function testParallelRefreshWithPreviousTokenWithinGraceSucceedsWithoutNewCookie(): void
+    {
+        $old = $this->loginCookie();
+        self::assertSame(200, $this->refresh($old)->getStatusCode());
+        $this->clock->advance('+20 seconds');
+        $res = $this->refresh($old);
+        self::assertSame(200, $res->getStatusCode());
+        self::assertSame('', $res->getHeaderLine('Set-Cookie'));
+    }
+
+    public function testReuseOfRotatedTokenAfterGraceClosesSession(): void
+    {
+        $old = $this->loginCookie();
+        $new = $this->refreshCookieFrom($this->refresh($old));
+        $this->clock->advance('+31 seconds');
+        self::assertSame(401, $this->refresh($old)->getStatusCode());
+        // sesja zamknięta — aktualny token (np. prawowitego użytkownika albo złodzieja) też już nie działa
+        self::assertSame(401, $this->refresh($new)->getStatusCode());
+    }
+
+    public function testLogoutRevokesRefreshToken(): void
+    {
+        $cookie = $this->loginCookie();
+        self::assertSame(204, $this->request('POST', '/api/auth/logout', cookies: ['refresh_token' => $cookie])->getStatusCode());
+        self::assertSame(401, $this->refresh($cookie)->getStatusCode());
+    }
+
+    public function testLogoutOfOneSessionKeepsOthers(): void
+    {
+        $first = $this->loginCookie();
+        $second = $this->refreshCookieFrom($this->login('a@test.pl', 'haslo-testowe-123'));
+        $this->request('POST', '/api/auth/logout', cookies: ['refresh_token' => $first]);
+        self::assertSame(200, $this->refresh($second)->getStatusCode());
+    }
+
+    public function testRefreshTokenWithoutSessionIsRejected(): void
+    {
+        // token w starym formacie (sprzed sesji) — podpis poprawny, ale brak sid/jti
+        $id = $this->createUser('admin');
+        $now = $this->clock->now()->getTimestamp();
+        $legacy = \Firebase\JWT\JWT::encode(['sub' => $id, 'typ' => 'refresh', 'iat' => $now, 'exp' => $now + 3600], $this->config->jwtSecret, 'HS256');
+        self::assertSame(401, $this->refresh($legacy)->getStatusCode());
+    }
+
+    public function testLoginRemovesExpiredSessions(): void
+    {
+        $this->loginCookie();
+        $this->clock->advance('+15 days');
+        $this->login('a@test.pl', 'haslo-testowe-123');
+        self::assertSame(1, $this->db->collection('sessions')->countDocuments());
     }
 }

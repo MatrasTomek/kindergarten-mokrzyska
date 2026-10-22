@@ -3,6 +3,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { cspFromHtaccess, inlineHashes } from './csp.mjs';
 
 /** Trasy prerenderowane (app.routes.server.ts: '**' → Prerender); każda musi mieć <trasa>/index.html. */
 export const PRERENDERED_ROUTES = [
@@ -84,6 +85,26 @@ function staticAssets404Ok(text) {
   return STATIC_EXTENSIONS.every((ext) => pattern.test(`/stary-chunk-ABC123.${ext}`)) && !pattern.test('/wpis/jesienny-spacer');
 }
 
+/** /.htaccess: HSTS, zakaz osadzania w ramkach, CSP z object-src/base-uri/frame-ancestors. */
+function securityHeadersOk(text) {
+  const csp = cspFromHtaccess(text) ?? '';
+  return (
+    /^\s*Header always set Strict-Transport-Security "max-age=\d{7,}[^"]*"$/m.test(text) &&
+    /^\s*Header always set X-Frame-Options "DENY"$/m.test(text) &&
+    ["default-src 'self'", "object-src 'none'", "base-uri 'self'", "frame-ancestors 'none'"].every((d) => csp.includes(d)) &&
+    !/'unsafe-eval'|script-src[^;]*'unsafe-inline'/.test(csp)
+  );
+}
+
+/** Hashe skryptów inline i handlerów on*="…" z HTML, których brakuje w CSP (zablokowałaby je przeglądarka). */
+function missingCspHashes(dir, text) {
+  const scriptSrc = (cspFromHtaccess(text) ?? '').split(';').find((d) => d.trim().startsWith('script-src')) ?? '';
+  const { scripts, handlers } = inlineHashes(dir);
+  const missing = [...scripts, ...handlers].filter((h) => !scriptSrc.includes(h));
+  if (handlers.length && !scriptSrc.includes("'unsafe-hashes'")) missing.push("'unsafe-hashes'");
+  return missing;
+}
+
 /** @returns {{check: string, ok: boolean, detail?: string}[]} */
 export function verifyPackage(dir) {
   const has = (p) => existsSync(join(dir, p));
@@ -104,6 +125,9 @@ export function verifyPackage(dir) {
     '.htaccess: brakujące pliki statyczne (js, css, map, czcionki, obrazki, json) → 404, nie fallback SPA',
     staticAssets404Ok(htaccess),
   );
+  check('.htaccess: nagłówki bezpieczeństwa (CSP, HSTS, X-Frame-Options)', securityHeadersOk(htaccess));
+  const missingHashes = missingCspHashes(dir, htaccess);
+  check('.htaccess: CSP obejmuje wszystkie skrypty inline z HTML', missingHashes.length === 0, `brak: ${missingHashes.join(' ')}`);
   check('.ovhconfig: PHP 8.4', /^app\.engine\.version=8\.4\s*$/m.test(read(join(dir, '.ovhconfig'))));
 
   check('api/index.php', has('api/index.php'));

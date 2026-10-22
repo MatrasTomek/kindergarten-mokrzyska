@@ -12,6 +12,6 @@ require $root . '/vendor/autoload.php';
 
 $_SERVER = App\Http\ServerParams::withAuthorization($_SERVER);
 
-Dotenv\Dotenv::createImmutable($root)->safeLoad();
+App\EnvFile::load($root); // prod: najpierw /home/<login>/<folder>.env (poza WWW), potem api/.env
 $config = App\Config::fromEnv($_ENV + $_SERVER); // $_SERVER: zmienne z `docker run -e` (Dotenv ich nie nadpisuje)
 App\AppFactory::create($config, App\Database::connect($config), new App\Support\SystemClock())->run();
