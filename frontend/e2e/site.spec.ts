@@ -49,11 +49,11 @@ test('home banner loads only the current-season image before page load, the rest
   const season = await page.locator('html').getAttribute('data-season');
   const { early, all } = await page.evaluate(() => {
     const loadStart = (performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming).loadEventStart;
-    const starts = (performance.getEntriesByType('resource') as PerformanceResourceTiming[]).filter((r) => r.name.includes('/images/start/'));
+    const starts = (performance.getEntriesByType('resource') as PerformanceResourceTiming[]).filter((r) => r.name.includes('/images-kindergarten/start/'));
     return { early: starts.filter((r) => r.startTime < loadStart).map((r) => r.name), all: starts.map((r) => r.name) };
   });
   expect(early).toHaveLength(1);
-  expect(early[0]).toContain(`/images/start/${season}-`);
+  expect(early[0]).toContain(`/images-kindergarten/start/${season}-`);
   expect(all.length).toBeGreaterThan(1);
 });
 

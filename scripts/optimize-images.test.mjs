@@ -6,7 +6,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { HEADERS, HEADER_WIDTHS, SEASONS, START_WIDTHS } from './optimize-images.mjs';
 
-const OUT = join(dirname(fileURLToPath(import.meta.url)), '..', 'frontend', 'public', 'images');
+const OUT = join(dirname(fileURLToPath(import.meta.url)), '..', 'frontend', 'public', 'images-kindergarten');
 
 /** Budżety ze specyfikacji (sekcja 6): baner desktop ≤ 250 kB, telefon ≤ 120 kB, nagłówek podstrony ≤ 100 kB. */
 const BUDGET = { 'start-1920': 250_000, 'start-768': 120_000, 'headers-960': 100_000 };

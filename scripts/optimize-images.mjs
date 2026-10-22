@@ -1,5 +1,5 @@
 // Jednorazowa optymalizacja zdjęć strony: oryginały z frontend/src/assets/images/{start,headers}
-// → WebP w kilku szerokościach w frontend/public/images/ (wynik commitujemy, build go tylko kopiuje).
+// → WebP w kilku szerokościach w frontend/public/images-kindergarten/ (wynik commitujemy, build go tylko kopiuje).
 //
 // sharp nie jest zależnością frontendu (node_modules budowane na Windows). Uruchomienie:
 //   npm i --prefix <tmp> sharp@0.34
@@ -28,7 +28,7 @@ const BUDGETS = {
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', 'frontend');
 const SRC = join(ROOT, 'src', 'assets', 'images');
-const OUT = join(ROOT, 'public', 'images');
+const OUT = join(ROOT, 'public', 'images-kindergarten');
 
 /** Kolejne próby: jakość 78 → 54, potem lekkie rozmycie (bardzo szczegółowe zdjęcia, np. kora w ogródku). */
 const ATTEMPTS = [[78, 0], [72, 0], [66, 0], [60, 0], [54, 0], [54, 0.6], [50, 0.8]];

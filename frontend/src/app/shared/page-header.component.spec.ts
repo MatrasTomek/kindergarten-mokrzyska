@@ -19,8 +19,8 @@ describe('PageHeaderComponent', () => {
     expect(el.querySelector('h1')!.textContent!.trim()).toBe('Rekrutacja');
     expect(el.querySelector('.tag')!.textContent!.trim()).toBe('Zapisy');
     const img = el.querySelector('img')!;
-    expect(img.getAttribute('src')).toBe('/images/headers/2-960.webp');
-    expect(img.getAttribute('srcset')).toBe('/images/headers/2-480.webp 480w, /images/headers/2-960.webp 960w');
+    expect(img.getAttribute('src')).toBe('/images-kindergarten/headers/2-960.webp');
+    expect(img.getAttribute('srcset')).toBe('/images-kindergarten/headers/2-480.webp 480w, /images-kindergarten/headers/2-960.webp 960w');
     expect(img.getAttribute('alt')).toBe('');
   });
 

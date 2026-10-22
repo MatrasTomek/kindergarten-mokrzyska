@@ -3,7 +3,7 @@ import { Post } from './models';
 export type SectionKey = 'aktualnosci' | 'grupy' | 'dla-rodzicow' | 'specjalisci' | 'dokumenty' | 'rekrutacja'
   | 'rodo' | 'kontakt' | 'o-nas' | 'z-zycia-przedszkola' | 'deklaracja-dostepnosci' | 'neutral';
 
-/** Dział serwisu: stały kolor (biały tekst ≥ 4.5:1), etykieta i zdjęcie nagłówka (`/images/headers/<photo>-<w>.webp`). */
+/** Dział serwisu: stały kolor (biały tekst ≥ 4.5:1), etykieta i zdjęcie nagłówka (`/images-kindergarten/headers/<photo>-<w>.webp`). */
 export interface Section { key: SectionKey; title: string; path: string; color: string; tag: string; icon: string; photo: string | null }
 
 export const NEUTRAL_COLOR = '#475569';

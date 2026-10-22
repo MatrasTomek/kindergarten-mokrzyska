@@ -7,7 +7,7 @@ export const SLIDE_ORDER: readonly SeasonKey[] = ['spring', 'summer', 'autumn', 
 export const SLIDE_INTERVAL_MS = 6000;
 
 const NAMES: Record<SeasonKey, string> = { spring: 'Wiosna', summer: 'Lato', autumn: 'Jesień', winter: 'Zima' };
-const img = (s: SeasonKey, w: number): string => `url(/images/start/${s}-${w}.webp)`;
+const img = (s: SeasonKey, w: number): string => `url(/images-kindergarten/start/${s}-${w}.webp)`;
 /** Adresy obrazków liczone raz przy ładowaniu modułu, nie przy każdym przebiegu wykrywania zmian. */
 const SLIDES = SLIDE_ORDER.map((key) => ({ key, img768: img(key, 768), img1280: img(key, 1280), img1920: img(key, 1920) }));
 

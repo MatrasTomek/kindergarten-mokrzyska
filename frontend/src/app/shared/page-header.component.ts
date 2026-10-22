@@ -79,7 +79,7 @@ export class PageHeaderComponent {
   protected readonly photo = computed(() => {
     const p = this.section().photo;
     if (!p) return null;
-    const url = (w: number): string => `/images/headers/${p}-${w}.webp`;
+    const url = (w: number): string => `/images-kindergarten/headers/${p}-${w}.webp`;
     return { src: url(960), srcset: `${url(480)} 480w, ${url(960)} 960w` };
   });
 }

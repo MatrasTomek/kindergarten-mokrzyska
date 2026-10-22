@@ -97,7 +97,7 @@ describe('PostDetailPage', () => {
     http.expectOne('/api/posts/bal').flush(post({ news: true, groupIds: ['g1'] }));
     f.detectChanges();
     expect(crumbs(f.nativeElement)).toEqual(['Start', 'Aktualności', 'Bal']);
-    expect(f.nativeElement.querySelector('img[src="/images/headers/3-960.webp"]')).not.toBeNull();
+    expect(f.nativeElement.querySelector('img[src="/images-kindergarten/headers/3-960.webp"]')).not.toBeNull();
   });
 
   it('shows a group post under its group', () => {
