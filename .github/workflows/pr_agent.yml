@@ -1,0 +1,34 @@
+name: PR Agent (Copilot)
+
+on:
+    pull_request:
+        types: [opened, reopened, ready_for_review]
+    issue_comment:
+        types: [created]
+
+jobs:
+    pr_agent_job:
+        runs-on: ubuntu-latest
+        permissions:
+            issues: write
+            pull-requests: write
+            contents: read
+        name: Run PR Agent
+        steps:
+            # litellm (provider github_copilot) szuka tokenu w pliku "access-token";
+            # bez niego próbuje interaktywnego device-flow, który w CI się nie uda.
+            - name: Przygotuj token Copilot
+              env:
+                  COPILOT_ACCESS_TOKEN: ${{ secrets.COPILOT_ACCESS_TOKEN }}
+              run: |
+                  mkdir -p "$GITHUB_WORKSPACE/.copilot"
+                  printf '%s' "$COPILOT_ACCESS_TOKEN" > "$GITHUB_WORKSPACE/.copilot/access-token"
+            - name: PR Agent action
+              uses: Codium-ai/pr-agent@main
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  CONFIG.MODEL: 'github_copilot/gpt-4.1'
+                  CONFIG.FALLBACK_MODELS: '["github_copilot/gpt-4o"]'
+                  CONFIG.MAX_MODEL_TOKENS: '64000'
+                  # Akcja działa w kontenerze, gdzie $GITHUB_WORKSPACE jest zamontowany jako /github/workspace
+                  GITHUB_COPILOT_TOKEN_DIR: '/github/workspace/.copilot'
