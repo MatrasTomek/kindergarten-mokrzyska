@@ -85,6 +85,22 @@ function staticAssets404Ok(text) {
   return STATIC_EXTENSIONS.every((ext) => pattern.test(`/stary-chunk-ABC123.${ext}`)) && !pattern.test('/wpis/jesienny-spacer');
 }
 
+/** /.htaccess: przekierowanie www → bez www oraz wpisy, grupy i sitemap do PHP (App\\Seo) — przed fallbackiem SPA. */
+function seoRulesOk(text) {
+  const lines = text.split(/\r?\n/).map((l) => l.trim());
+  const fallback = lines.findIndex((l) => /^RewriteRule \^ \//.test(l));
+  const before = (re) => {
+    const i = lines.findIndex((l) => re.test(l));
+    return i !== -1 && fallback !== -1 && i < fallback;
+  };
+  return (
+    before(/^RewriteCond %\{HTTP_HOST\} \^www\\\.\(\.\+\)\$ \[NC\]$/) &&
+    before(/^RewriteRule \^ https:\/\/%1%\{REQUEST_URI\} \[L,R=301\]$/) &&
+    before(/^RewriteRule \^\(wpis\|grupy\)\/\[\^\/\.\]\+\$ api\/index\.php \[L\]$/) &&
+    before(/^RewriteRule \^sitemap\\\.xml\$ api\/index\.php \[L\]$/)
+  );
+}
+
 /** /.htaccess: HSTS, zakaz osadzania w ramkach, CSP z object-src/base-uri/frame-ancestors. */
 function securityHeadersOk(text) {
   const csp = cspFromHtaccess(text) ?? '';
@@ -125,9 +141,11 @@ export function verifyPackage(dir) {
     '.htaccess: brakujące pliki statyczne (js, css, map, czcionki, obrazki, json) → 404, nie fallback SPA',
     staticAssets404Ok(htaccess),
   );
+  check('.htaccess: www → bez www (301); /wpis/*, /grupy/*, /sitemap.xml → api/index.php przed fallbackiem SPA', seoRulesOk(htaccess));
   check('.htaccess: nagłówki bezpieczeństwa (CSP, HSTS, X-Frame-Options)', securityHeadersOk(htaccess));
   const missingHashes = missingCspHashes(dir, htaccess);
   check('.htaccess: CSP obejmuje wszystkie skrypty inline z HTML', missingHashes.length === 0, `brak: ${missingHashes.join(' ')}`);
+  check('robots.txt ze wskazaniem sitemap.xml', /^Sitemap: https:\/\/\S+\/sitemap\.xml$/m.test(read(join(dir, 'robots.txt'))));
   check('.ovhconfig: PHP 8.4', /^app\.engine\.version=8\.4\s*$/m.test(read(join(dir, '.ovhconfig'))));
 
   check('api/index.php', has('api/index.php'));

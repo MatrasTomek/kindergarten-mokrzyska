@@ -20,6 +20,8 @@ use App\Post\PostAdminController;
 use App\Post\PostPublicController;
 use App\Post\PostRepository;
 use App\Post\PostService;
+use App\Seo\SeoPageController;
+use App\Seo\SitemapController;
 use App\Support\Clock;
 use App\Support\HtmlSanitizer;
 use App\Theme\SettingsRepository;
@@ -51,6 +53,8 @@ final class Services
     public readonly PostAdminController $postAdminController;
     public readonly PostPublicController $postPublicController;
     public readonly ContentController $contentController;
+    public readonly SeoPageController $seoPageController;
+    public readonly SitemapController $sitemapController;
 
     public function __construct(
         public readonly Config $config,
@@ -86,5 +90,8 @@ final class Services
             $contentItems,
             new ContentService($contentItems, $this->posts, $this->sanitizer, $this->uploads, $clock)
         );
+        // prod: /www/api/src → /www/index.csr.html (powłoka z buildu frontu); dev/testy: brak pliku → powłoka zastępcza
+        $this->seoPageController = new SeoPageController($this->posts, $this->groups, dirname(__DIR__, 2) . '/index.csr.html');
+        $this->sitemapController = new SitemapController($this->posts, $this->groups);
     }
 }

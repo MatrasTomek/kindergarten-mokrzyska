@@ -5,6 +5,30 @@
   <title>Przedszkole Parafialne w Mokrzyskach</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Dane strukturalne (wyniki lokalne Google). Dane kontaktowe = strona Kontakt w CMS — przy zmianie popraw też tutaj.
+       Opis, canonical i Open Graph ustawia Seo (core/seo.ts) przy prerenderze, a dla /wpis/* i /grupy/* — PHP (App\Seo). -->
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Preschool",
+      "name": "Publiczne Przedszkole Parafialne w Mokrzyskach pw. Błogosławionej Karoliny Kózka",
+      "alternateName": "Przedszkole Parafialne w Mokrzyskach",
+      "url": "https://przedszkolemokrzyska.pl/",
+      "logo": "https://przedszkolemokrzyska.pl/logo.jpg",
+      "image": "https://przedszkolemokrzyska.pl/logo.jpg",
+      "telephone": "+48 14 686 82 40",
+      "email": "mokrzyska.przedszkole1@interia.pl",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "ul. Kościelna 13",
+        "postalCode": "32-800",
+        "addressLocality": "Mokrzyska",
+        "addressRegion": "małopolskie",
+        "addressCountry": "PL"
+      },
+      "foundingDate": "1990-10-01"
+    }
+  </script>
   <!--
     Pre-paint (przed pierwszym malowaniem, bez sieci): kolory pory roku w strefie Europe/Warsaw albo ostatni motyw
     z /api/theme (localStorage, zapisuje ThemeService) + zapisane ustawienia paska dostępności (klucz `a11y`)

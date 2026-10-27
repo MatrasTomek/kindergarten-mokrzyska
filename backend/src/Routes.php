@@ -42,6 +42,11 @@ final class Routes
         $app->get('/api/groups', [$s->groupController, 'list']);
         $app->get('/api/groups/{slug}', [$s->groupController, 'show']);
         $app->get('/api/content/{page}', [$s->contentController, 'publicList']);
+
+        // Poza /api: /.htaccess kieruje tu te adresy (HTML z meta tagami dla robotów, sitemap)
+        $app->get('/sitemap.xml', [$s->sitemapController, 'sitemap']);
+        $app->get('/wpis/{slug}', [$s->seoPageController, 'post']);
+        $app->get('/grupy/{slug}', [$s->seoPageController, 'group']);
     }
 
     /** Trasy dla ról admin i user (prefiks /api/admin). */

@@ -11,24 +11,24 @@ const postsPage = () => import('./public/posts/posts.page').then((m) => m.PostsP
 const contentPage = () => import('./public/content/content.page').then((m) => m.ContentPageComponent);
 
 export const routes: Routes = [
-  { path: 'admin', loadChildren: () => import('./admin/admin.routes').then((m) => m.ADMIN_ROUTES) },
+  { path: 'admin', data: { noindex: true }, loadChildren: () => import('./admin/admin.routes').then((m) => m.ADMIN_ROUTES) },
   {
     path: '',
     component: PublicLayoutComponent,
     children: [
       { path: '', component: HomePage, title: SITE_SHORT_NAME },
-      { path: 'aktualnosci', loadComponent: postsPage, data: { mode: 'news' }, title: pageTitle('Aktualności') },
-      { path: 'z-zycia-przedszkola', loadComponent: postsPage, data: { mode: 'life' }, title: pageTitle('Z życia Przedszkola') },
-      { path: 'wpis/:slug', loadComponent: () => import('./public/posts/post-detail.page').then((m) => m.PostDetailPage) },
-      { path: 'grupy', component: GroupsPage, title: pageTitle('Grupy') },
-      { path: 'grupy/:slug', loadComponent: () => import('./public/groups/group-detail.page').then((m) => m.GroupDetailPage) },
+      { path: 'aktualnosci', loadComponent: postsPage, data: { mode: 'news', description: 'Aktualności Przedszkola Parafialnego w Mokrzyskach – ogłoszenia i bieżące informacje dla rodziców.' }, title: pageTitle('Aktualności') },
+      { path: 'z-zycia-przedszkola', loadComponent: postsPage, data: { mode: 'life', description: 'Z życia Przedszkola Parafialnego w Mokrzyskach – relacje i zdjęcia z wydarzeń, uroczystości i zajęć.' }, title: pageTitle('Z życia Przedszkola') },
+      { path: 'wpis/:slug', data: { seo: 'manual' }, loadComponent: () => import('./public/posts/post-detail.page').then((m) => m.PostDetailPage) },
+      { path: 'grupy', component: GroupsPage, title: pageTitle('Grupy'), data: { description: 'Grupy w Przedszkolu Parafialnym w Mokrzyskach – informacje i wpisy poszczególnych grup.' } },
+      { path: 'grupy/:slug', data: { seo: 'manual' }, loadComponent: () => import('./public/groups/group-detail.page').then((m) => m.GroupDetailPage) },
       ...CONTENT_PAGES.map((p) => ({
         path: p.slug,
         loadComponent: contentPage,
-        data: { page: p.slug, heading: p.title },
+        data: { page: p.slug, heading: p.title, description: p.description },
         title: pageTitle(p.title),
       })),
-      { path: '**', component: NotFoundPage, title: pageTitle('Nie znaleziono') },
+      { path: '**', component: NotFoundPage, title: pageTitle('Nie znaleziono'), data: { noindex: true } },
     ],
   },
 ];
