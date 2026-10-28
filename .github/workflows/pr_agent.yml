@@ -21,6 +21,10 @@ jobs:
               env:
                   COPILOT_ACCESS_TOKEN: ${{ secrets.COPILOT_ACCESS_TOKEN }}
               run: |
+                  if [ -z "$COPILOT_ACCESS_TOKEN" ]; then
+                      echo "::error::Brak sekretu COPILOT_ACCESS_TOKEN (Settings > Secrets and variables > Actions). Bez niego litellm uruchamia interaktywne device-flow, które w CI nie może się powieść."
+                      exit 1
+                  fi
                   mkdir -p "$GITHUB_WORKSPACE/.copilot"
                   printf '%s' "$COPILOT_ACCESS_TOKEN" > "$GITHUB_WORKSPACE/.copilot/access-token"
             - name: PR Agent action
