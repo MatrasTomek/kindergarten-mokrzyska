@@ -11,13 +11,17 @@ const ASSETS_404 = 'RewriteRule \\.(js|css|map|woff2?|png|jpe?g|webp|svg|ico|jso
 const securityHeaders = (csp) =>
   `<IfModule mod_headers.c>\n  Header always set Content-Security-Policy "${csp}"\n` +
   '  Header always set Strict-Transport-Security "max-age=31536000"\n  Header always set X-Frame-Options "DENY"\n</IfModule>\n';
+const WWW_REDIRECT = 'RewriteCond %{HTTP_HOST} ^www\\.(.+)$ [NC]\nRewriteRule ^ https://%1%{REQUEST_URI} [L,R=301]';
+const SEO_ROUTES = 'RewriteRule ^(wpis|grupy)/[^/.]+$ api/index.php [L]\nRewriteRule ^sitemap\\.xml$ api/index.php [L]';
 const ROOT_HTACCESS =
-  `RewriteEngine On\nRewriteCond %{REQUEST_FILENAME} -f\nRewriteRule ^ - [L]\n${ASSETS_404}\nRewriteRule ^ /index.csr.html [L]\n` +
+  `RewriteEngine On\n${WWW_REDIRECT}\n${SEO_ROUTES}\n` +
+  `RewriteCond %{REQUEST_FILENAME} -f\nRewriteRule ^ - [L]\n${ASSETS_404}\nRewriteRule ^ /index.csr.html [L]\n` +
   securityHeaders(contentSecurityPolicy({ scripts: [], handlers: [] }));
 const HEADERS_CHECK = '.htaccess: nagłówki bezpieczeństwa (CSP, HSTS, X-Frame-Options)';
 const CSP_CHECK = '.htaccess: CSP obejmuje wszystkie skrypty inline z HTML';
 const PREPAINT = '<script id="prepaint">\n  document.documentElement.dataset.x = "1";\n</script>';
 const ONLOAD = `<link rel="stylesheet" href="styles.css" media="print" onload="this.media='all'">`;
+const SEO_CHECK = '.htaccess: www → bez www (301); /wpis/*, /grupy/*, /sitemap.xml → api/index.php przed fallbackiem SPA';
 const ASSETS_CHECK = '.htaccess: brakujące pliki statyczne (js, css, map, czcionki, obrazki, json) → 404, nie fallback SPA';
 const API_HTACCESS = [
   'RewriteCond %{HTTPS} !=on',
@@ -55,6 +59,7 @@ function makePackage(overrides = {}) {
     'api/.user.ini': 'upload_max_filesize=12M\npost_max_size=13M\n',
     'api/.env.example': 'APP_ENV=dev',
     'uploads/.htaccess': UPLOADS_HTACCESS,
+    'robots.txt': 'User-agent: *\nSitemap: https://przedszkolemokrzyska.pl/sitemap.xml\n',
     ...Object.fromEntries(PRERENDERED_ROUTES.map((r) => [`${r}/index.html`, '<html></html>'])),
     ...overrides,
   };
@@ -94,7 +99,13 @@ const cases = [
   ['prerender panelu admina', { 'admin/index.html': '<html>' }, 'brak admin/'],
   ['prerender trasy wpisu', { 'wpis/x/index.html': '<html>' }, 'brak wpis/'],
   ['fallback na index.html', { '.htaccess': ROOT_HTACCESS.replace('/index.csr.html', '/index.html') }, '.htaccess: fallback SPA na /index.csr.html'],
-  ['brak .htaccess', { '.htaccess': null }, '.htaccess: fallback SPA na /index.csr.html', ASSETS_CHECK, HEADERS_CHECK],
+  ['brak .htaccess', { '.htaccess': null }, '.htaccess: fallback SPA na /index.csr.html', ASSETS_CHECK, SEO_CHECK, HEADERS_CHECK],
+  ['brak przekierowania z www', { '.htaccess': ROOT_HTACCESS.replace(`${WWW_REDIRECT}\n`, '') }, SEO_CHECK],
+  ['wpisy nie trafiają do PHP', { '.htaccess': ROOT_HTACCESS.replace(/^RewriteRule \^\(wpis.*$/m, '') }, SEO_CHECK],
+  ['wzorzec wpisów łapie grupy/index.html (pętla po przepisaniu /grupy)', { '.htaccess': ROOT_HTACCESS.replace('[^/.]+', '[^/]+') }, SEO_CHECK],
+  ['brak sitemap.xml', { '.htaccess': ROOT_HTACCESS.replace(/^RewriteRule \^sitemap.*$/m, '') }, SEO_CHECK],
+  ['reguły SEO po fallbacku SPA (nigdy nie zadziałają)', { '.htaccess': ROOT_HTACCESS.replace(`${SEO_ROUTES}\n`, '') + `${SEO_ROUTES}\n` }, SEO_CHECK],
+  ['brak robots.txt', { 'robots.txt': null }, 'robots.txt ze wskazaniem sitemap.xml'],
   ['brak HSTS', { '.htaccess': ROOT_HTACCESS.replace(/^.*Strict-Transport-Security.*$/m, '') }, HEADERS_CHECK],
   ['brak X-Frame-Options', { '.htaccess': ROOT_HTACCESS.replace(/^.*X-Frame-Options.*$/m, '') }, HEADERS_CHECK],
   ['CSP bez frame-ancestors', { '.htaccess': ROOT_HTACCESS.replace("; frame-ancestors 'none'", '') }, HEADERS_CHECK],

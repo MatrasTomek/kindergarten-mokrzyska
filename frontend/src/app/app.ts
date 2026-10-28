@@ -2,6 +2,7 @@ import { DOCUMENT } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { focusMainOnNavigation } from './core/focus-main-on-navigation';
+import { seoOnNavigation } from './core/seo';
 
 @Component({
   selector: 'app-root',
@@ -12,5 +13,6 @@ export class App {
   constructor() {
     inject(DOCUMENT).documentElement.lang = 'pl';
     focusMainOnNavigation();
+    seoOnNavigation();
   }
 }

@@ -1,16 +1,18 @@
 import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, computed, DestroyRef, effect, inject, input, signal } from '@angular/core';
-import { Meta, Title } from '@angular/platform-browser';
+import { Component, computed, effect, inject, input, signal } from '@angular/core';
+import { Title } from '@angular/platform-browser';
 import { RouterLink } from '@angular/router';
 import { PublicApi } from '../../core/api/public-api';
 import { apiErrorMessage } from '../../core/api-error';
-import { pageTitle, SITE_SHORT_NAME } from '../../core/config';
+import { pageTitle, SITE_SHORT_NAME, uploadUrl } from '../../core/config';
 import { Group, Post } from '../../core/models';
+import { Seo } from '../../core/seo';
 import { GalleryComponent } from '../../shared/gallery.component';
 import { Crumb, PageHeaderComponent } from '../../shared/page-header.component';
 import { postSection, SECTIONS } from '../../core/sections';
 
+/** Ta sama reguła co App\Seo\SeoPageController::describePost (meta wstawiane przez PHP przed startem aplikacji). */
 function describe(p: Post): string {
   const text = p.excerpt.trim() || p.body.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
   return text.length > 160 ? text.slice(0, 157).trimEnd() + '…' : text;
@@ -48,8 +50,7 @@ function describe(p: Post): string {
 export class PostDetailPage {
   private readonly api = inject(PublicApi);
   private readonly title = inject(Title);
-  private readonly meta = inject(Meta);
-  private readonly destroyRef = inject(DestroyRef);
+  private readonly seo = inject(Seo);
   readonly slug = input.required<string>();
   protected readonly post = signal<Post | null>(null);
   protected readonly notFound = signal(false);
@@ -85,7 +86,6 @@ export class PostDetailPage {
   });
 
   constructor() {
-    this.destroyRef.onDestroy(() => this.meta.removeTag("name='description'"));
     effect((onCleanup) => {
       const p = this.post();
       if (!p || postSection(p) !== 'grupy' || this.groups()) return;
@@ -94,7 +94,6 @@ export class PostDetailPage {
     });
     effect((onCleanup) => {
       const slug = this.slug();
-      this.meta.removeTag("name='description'");
       this.title.setTitle(SITE_SHORT_NAME);
       this.post.set(null);
       this.notFound.set(false);
@@ -103,12 +102,20 @@ export class PostDetailPage {
         next: (p) => {
           this.post.set(p);
           this.title.setTitle(pageTitle(p.title));
-          this.meta.updateTag({ name: 'description', content: describe(p) });
+          const image = p.images[0];
+          this.seo.set({
+            title: pageTitle(p.title),
+            path: `/wpis/${p.slug}`,
+            description: describe(p),
+            image: image ? uploadUrl(image.file) : undefined,
+            type: 'article',
+          });
         },
         error: (e) => {
           if (e instanceof HttpErrorResponse && e.status === 404) {
             this.notFound.set(true);
             this.title.setTitle(pageTitle('Nie znaleziono wpisu'));
+            this.seo.set({ title: pageTitle('Nie znaleziono wpisu'), path: `/wpis/${slug}`, noindex: true });
           } else {
             this.error.set(apiErrorMessage(e));
             this.title.setTitle(pageTitle('Błąd'));

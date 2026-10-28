@@ -6,6 +6,7 @@ import { PublicApi } from '../../core/api/public-api';
 import { apiErrorMessage } from '../../core/api-error';
 import { pageTitle, SITE_SHORT_NAME } from '../../core/config';
 import { Group, Paged, Post } from '../../core/models';
+import { groupDescription, Seo } from '../../core/seo';
 import { PostListComponent } from '../posts/post-list.component';
 import { SECTIONS } from '../../core/sections';
 import { PageHeaderComponent } from '../../shared/page-header.component';
@@ -37,6 +38,7 @@ export class GroupDetailPage {
   protected readonly neutral = SECTIONS.neutral;
   private readonly api = inject(PublicApi);
   private readonly title = inject(Title);
+  private readonly seo = inject(Seo);
   readonly slug = input.required<string>();
   protected readonly page = signal(1);
   protected readonly group = signal<Group | null>(null);
@@ -59,11 +61,13 @@ export class GroupDetailPage {
         next: (g) => {
           this.group.set(g);
           this.title.setTitle(pageTitle(g.name));
+          this.seo.set({ title: pageTitle(g.name), path: `/grupy/${g.slug}`, description: groupDescription(g) });
         },
         error: (e) => {
           if (is404(e)) {
             this.notFound.set(true);
             this.title.setTitle(pageTitle('Nie ma takiej grupy'));
+            this.seo.set({ title: pageTitle('Nie ma takiej grupy'), path: `/grupy/${slug}`, noindex: true });
           } else {
             this.error.set(apiErrorMessage(e));
             this.title.setTitle(pageTitle('Błąd'));

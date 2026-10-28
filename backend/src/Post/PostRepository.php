@@ -40,6 +40,15 @@ final class PostRepository
         return $this->col->findOne(['slug' => $slug, 'status' => 'published']);
     }
 
+    /** Opublikowane wpisy (tylko slug i daty) — do sitemap.xml. @return list<array<string,mixed>> */
+    public function publishedForSitemap(): array
+    {
+        return $this->col->find(
+            ['status' => 'published'],
+            ['projection' => ['slug' => 1, 'publishedAt' => 1, 'updatedAt' => 1], 'sort' => ['publishedAt' => -1]]
+        )->toArray();
+    }
+
     public function slugExists(string $slug): bool
     {
         return $this->col->countDocuments(['slug' => $slug]) > 0;

@@ -1,0 +1,5 @@
+User-agent: *
+# Panel administracyjny — bez indeksowania. NIE blokuj /api/: Google pobiera z niego treści przy renderowaniu stron.
+Disallow: /admin
+
+Sitemap: https://przedszkolemokrzyska.pl/sitemap.xml

@@ -10,6 +10,10 @@ DirectoryIndex index.html
 DirectorySlash Off
 RewriteEngine On
 
+# Jeden adres strony: www → bez www (SEO: bez duplikatów treści; canonical i sitemap też są bez www), od razu na https
+RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
+RewriteRule ^ https://%1%{REQUEST_URI} [L,R=301]
+
 # HTTPS (X-Forwarded-Proto: gdyby TLS kończył się na proxy przed Apache — chroni przed pętlą)
 RewriteCond %{HTTPS} !=on
 RewriteCond %{HTTP:X-Forwarded-Proto} !=https
@@ -17,6 +21,13 @@ RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
 # API i pliki mają własne .htaccess (api/ ma własny RewriteEngine, więc i tak tu nie trafia)
 RewriteRule ^(api|uploads)(/|$) - [L]
+
+# Wpisy i grupy: powłoka aplikacji z meta tagami z bazy (App\Seo\SeoPageController — podgląd linków, wyszukiwarki)
+# oraz mapa strony z bazy. Slim dostaje oryginalny REQUEST_URI (/wpis/…), więc trasy są poza prefiksem /api.
+# [^/.]: slug nie ma kropki — po wewnętrznym przepisaniu /grupy → grupy/index.html (niżej) reguły biegną od nowa
+# i „grupy/index.html” nie może tu trafić.
+RewriteRule ^(wpis|grupy)/[^/.]+$ api/index.php [L]
+RewriteRule ^sitemap\.xml$ api/index.php [L]
 
 # Strona główna = prerenderowany index.html
 RewriteRule ^$ index.html [L]
@@ -34,7 +45,7 @@ RewriteRule ^ - [L]
 # chunk JS: HTML zamiast skryptu (przy nosniff) psułby stronę po cichu, a 404 Angular zgłasza jako błąd ładowania.
 RewriteRule \.(js|css|map|woff2?|png|jpe?g|webp|svg|ico|json)$ - [NC,R=404,L]
 
-# Trasy renderowane w przeglądarce: /wpis/*, /grupy/*, /admin/* i nieznane adresy (404 robi Angular).
+# Trasy renderowane w przeglądarce: /admin/* i nieznane adresy (404 robi Angular, z meta robots=noindex).
 # ZAWSZE index.csr.html — index.html to prerenderowana strona główna ze znacznikami hydratacji.
 RewriteRule ^ /__FALLBACK__ [L]
 

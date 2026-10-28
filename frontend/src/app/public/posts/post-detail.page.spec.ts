@@ -5,9 +5,12 @@ import { Meta, Title } from '@angular/platform-browser';
 import { provideRouter } from '@angular/router';
 import { providePrimeNG } from 'primeng/config';
 import { SITE_SHORT_NAME } from '../../core/config';
+import { DEFAULT_DESCRIPTION, SITE_URL } from '../../core/seo';
 import { PostDetailPage } from './post-detail.page';
 
 describe('PostDetailPage', () => {
+  afterEach(() => document.head.querySelectorAll('meta[name], meta[property], link[rel="canonical"]').forEach((e) => e.remove()));
+
   function setup() {
     TestBed.configureTestingModule({
       imports: [PostDetailPage],
@@ -59,7 +62,21 @@ describe('PostDetailPage', () => {
     expect(TestBed.inject(Title).getTitle()).toBe('Błąd – Przedszkole Parafialne w Mokrzyskach');
   });
 
-  it('clears description and title when slug changes to a missing post', () => {
+  it('sets canonical, Open Graph type and the first photo as the image', () => {
+    const { f, http } = setup();
+    http.expectOne('/api/posts/bal').flush({
+      id: '1', title: 'Bal', slug: 'bal', excerpt: 'Zajawka balu', body: '', status: 'published', publishedAt: null,
+      targets: { news: false, groupIds: [] }, images: [{ file: 'posts/a.webp', thumb: 'posts/a_thumb.webp', w: 10, h: 10, alt: '' }],
+    });
+    f.detectChanges();
+    const meta = TestBed.inject(Meta);
+    expect(meta.getTag('property="og:type"')!.content).toBe('article');
+    expect(meta.getTag('property="og:image"')!.content).toBe(`${SITE_URL}/uploads/posts/a.webp`);
+    expect(document.head.querySelector('link[rel="canonical"]')!.getAttribute('href')).toBe(`${SITE_URL}/wpis/bal`);
+    expect(meta.getTag('name=robots')).toBeNull();
+  });
+
+  it('title resets while loading another slug; a missing post gets noindex', () => {
     const { f, http } = setup();
     http.expectOne('/api/posts/bal').flush({
       id: '1', title: 'Bal', slug: 'bal', excerpt: 'Zajawka balu', body: '', status: 'published',
@@ -69,22 +86,11 @@ describe('PostDetailPage', () => {
     f.componentRef.setInput('slug', 'brak');
     f.detectChanges();
     TestBed.tick();
-    expect(TestBed.inject(Meta).getTag('name=description')).toBeNull();
     expect(TestBed.inject(Title).getTitle()).toBe(SITE_SHORT_NAME);
     http.expectOne('/api/posts/brak').flush({}, { status: 404, statusText: 'Not Found' });
     f.detectChanges();
-    expect(TestBed.inject(Meta).getTag('name=description')).toBeNull();
-  });
-
-  it('removes description when destroyed', () => {
-    const { f, http } = setup();
-    http.expectOne('/api/posts/bal').flush({
-      id: '1', title: 'Bal', slug: 'bal', excerpt: 'Zajawka balu', body: '', status: 'published',
-      publishedAt: null, targets: { news: false, groupIds: [] }, images: [],
-    });
-    expect(TestBed.inject(Meta).getTag('name=description')).not.toBeNull();
-    f.destroy();
-    expect(TestBed.inject(Meta).getTag('name=description')).toBeNull();
+    expect(TestBed.inject(Meta).getTag('name=robots')!.content).toBe('noindex');
+    expect(TestBed.inject(Meta).getTag('name=description')!.content).toBe(DEFAULT_DESCRIPTION);
   });
 
   const post = (targets: { news: boolean; groupIds: string[] }) => ({

@@ -49,10 +49,11 @@ Zawartość paczki:
 
 ```
 deploy/
-  .htaccess          HTTPS, fallback SPA na index.csr.html, cache
+  .htaccess          HTTPS, www → bez www, /wpis/* /grupy/* /sitemap.xml → PHP, fallback SPA na index.csr.html, cache
   .ovhconfig         PHP 8.4 dla tego folderu
   index.html         prerenderowana strona główna
-  index.csr.html     pusta powłoka SPA (fallback dla /wpis/*, /grupy/*, /admin/*)
+  index.csr.html     pusta powłoka SPA (fallback dla /admin/*; dla /wpis/* i /grupy/* PHP wstawia do niej meta tagi)
+  robots.txt         blokada /admin, wskazanie sitemap.xml
   aktualnosci/index.html, grupy/index.html, …   prerenderowane podstrony
   *.js, *.css, media/
   api/               backend: index.php, src/, bin/, vendor/, .htaccess, .user.ini, .env.example
@@ -165,7 +166,11 @@ deploy/
    - `curl -I http://<domena>/aktualnosci` → `301` na `https://…/aktualnosci` (jedno przekierowanie, bez pętli),
    - `curl -I https://<domena>/aktualnosci` → `200` **bez** przekierowania na `/aktualnosci/` (prerenderowany
      `aktualnosci/index.html`); `/aktualnosci/` też `200`,
-   - `https://<domena>/wpis/cokolwiek` i `/admin` → `200` z powłoką SPA (`index.csr.html`; w źródle strony brak `ngh=`),
+   - `https://<domena>/admin` → `200` z powłoką SPA (`index.csr.html`; w źródle strony brak `ngh=`),
+   - `https://<domena>/wpis/<istniejący-slug>` → `200`, w źródle strony `<title>` wpisu, `og:title`, `og:image`, `canonical`;
+     `/wpis/nie-ma-takiego` → `404` z `<meta name="robots" content="noindex">` (strona i tak się wyświetla),
+   - `https://<domena>/sitemap.xml` → XML z podstronami, wpisami i grupami; `/robots.txt` → plik tekstowy,
+   - `curl -I https://www.<domena>/kontakt` → `301` na `https://<domena>/kontakt` (wymaga certyfikatu SSL także dla www),
      `https://<domena>/` → prerenderowana strona główna,
    - `curl -I https://<domena>/nie-ma-takiego-pliku.js` → `404` (brakujące pliki statyczne nie dostają powłoki SPA).
    Jeśli `curl -I https://…` zwraca 301 na samego siebie (pętla), proxy OVH nie przekazuje do Apache informacji o HTTPS.

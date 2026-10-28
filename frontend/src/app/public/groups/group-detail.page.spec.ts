@@ -1,12 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { Title } from '@angular/platform-browser';
+import { Meta, Title } from '@angular/platform-browser';
 import { provideRouter } from '@angular/router';
 import { providePrimeNG } from 'primeng/config';
 import { GroupDetailPage } from './group-detail.page';
 import { GroupsPage } from './groups.page';
 import { groupColor } from '../../core/sections';
+import { groupDescription, SITE_URL } from '../../core/seo';
 
 describe('Groups pages', () => {
   beforeEach(() => TestBed.configureTestingModule({
@@ -49,6 +50,20 @@ describe('Groups pages', () => {
     expect([...f.nativeElement.querySelectorAll('nav[aria-label="Ścieżka"] li')].map((li: Element) => li.textContent!.trim())).toEqual(['Start', 'Grupy', 'Pingwinki']);
     expect(f.nativeElement.textContent).toContain('Grupa 3-latków');
     expect(TestBed.inject(Title).getTitle()).toBe('Pingwinki – Przedszkole Parafialne w Mokrzyskach');
+  });
+
+  it('describes the group in meta tags (own description or a default sentence)', () => {
+    const f = TestBed.createComponent(GroupDetailPage);
+    f.componentRef.setInput('slug', 'pingwinki');
+    f.detectChanges();
+    TestBed.tick();
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne('/api/groups/pingwinki').flush({ id: '1', name: 'Pingwinki', slug: 'pingwinki', order: 1, description: '' });
+    f.detectChanges();
+    const meta = TestBed.inject(Meta);
+    expect(meta.getTag('name=description')!.content).toBe('Grupa Pingwinki w Przedszkolu Parafialnym w Mokrzyskach – wpisy i zdjęcia z życia grupy.');
+    expect(document.head.querySelector('link[rel="canonical"]')!.getAttribute('href')).toBe(`${SITE_URL}/grupy/pingwinki`);
+    expect(groupDescription({ name: 'X', description: ' Grupa 3-latków ' })).toBe('Grupa 3-latków');
   });
 
   it('shows a not-found state with its own title for an unknown group', () => {
