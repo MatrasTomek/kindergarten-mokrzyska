@@ -82,9 +82,20 @@ final class AuthTest extends ApiTestCase
         self::assertSame(200, $this->login('a@test.pl', 'haslo-testowe-123')->getStatusCode());
     }
 
+    public function testFewFailuresOfOthersOnSharedIpDoNotBlockAnotherUser(): void
+    {
+        // Personel przedszkola loguje się zza jednego routera: pomyłki jednej osoby nie blokują reszty.
+        $this->createUser('admin', 'ok@test.pl');
+        for ($i = 0; $i < 5; $i++) {
+            $this->login('pomylka@test.pl', 'zle-haslo-' . $i, '10.0.0.9');
+        }
+        self::assertSame(429, $this->login('pomylka@test.pl', 'zle-haslo-x', '10.0.0.9')->getStatusCode());
+        self::assertSame(200, $this->login('ok@test.pl', 'haslo-testowe-123', '10.0.0.9')->getStatusCode());
+    }
+
     public function testLimitPerIpAcrossEmails(): void
     {
-        for ($i = 0; $i < 5; $i++) {
+        for ($i = 0; $i < 60; $i++) {
             $this->login("x$i@test.pl", 'zle-haslo-123', '10.0.0.9');
         }
         $this->createUser('admin', 'ok@test.pl');
