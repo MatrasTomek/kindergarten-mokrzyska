@@ -75,8 +75,8 @@ const requiredTrimmed = (c: AbstractControl): ValidationErrors | null =>
 
       <fieldset class="row">
         <legend>Status</legend>
-        <p-radiobutton inputId="st-pub" formControlName="status" value="published" /><label for="st-pub">Opublikowany</label>
-        <p-radiobutton inputId="st-draft" formControlName="status" value="draft" /><label for="st-draft">Szkic (niewidoczny na stronie)</label>
+        <span class="opt"><p-radiobutton inputId="st-pub" formControlName="status" value="published" /><label for="st-pub">Opublikowany</label></span>
+        <span class="opt"><p-radiobutton inputId="st-draft" formControlName="status" value="draft" /><label for="st-draft">Szkic (niewidoczny na stronie)</label></span>
       </fieldset>
 
       <div class="buttons">
@@ -93,12 +93,14 @@ const requiredTrimmed = (c: AbstractControl): ValidationErrors | null =>
   `,
   styles: `
     .form { display: flex; flex-direction: column; gap: .75rem; max-width: 56rem; }
-    fieldset { border: 1px solid #6b7280; border-radius: .5rem; padding: 1rem; display: flex; flex-direction: column; gap: .5rem; }
+    fieldset { min-width: 0; border: 1px solid #6b7280; border-radius: .5rem; padding: 1rem; display: flex; flex-direction: column; gap: .5rem; }
     .row { display: flex; gap: .5rem; align-items: center; flex-direction: row; flex-wrap: wrap; }
     .info { margin: 0; }
     .error { margin: 1rem 0; }
     .buttons { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
     .spacer { flex: 1; }
+    p-multiselect { width: 100%; }
+    .opt { display: inline-flex; gap: .5rem; align-items: center; }
   `,
 })
 export class PostEditorPage {

@@ -30,13 +30,13 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         <p-button data-test="retry" label="Spróbuj ponownie" (onClick)="load()" />
       </div>
     } @else if (users(); as list) {
-      <table class="list">
+      <table class="list admin-table">
         <thead><tr><th>Imię i nazwisko</th><th>E-mail</th><th>Rola</th><th>Aktywny</th><th><span class="sr-only">Akcje</span></th></tr></thead>
         <tbody>
           @for (u of list; track u.id) {
             <tr>
-              <td>{{ u.name }}</td><td>{{ u.email }}</td><td>{{ roleLabel(u.role) }}</td><td>{{ u.active ? 'tak' : 'nie' }}</td>
-              <td>
+              <td data-label="Imię i nazwisko">{{ u.name }}</td><td data-label="E-mail">{{ u.email }}</td><td data-label="Rola">{{ roleLabel(u.role) }}</td><td data-label="Aktywny">{{ u.active ? 'tak' : 'nie' }}</td>
+              <td class="actions-cell">
                 <p-button icon="pi pi-pencil" [text]="true" [ariaLabel]="'Edytuj ' + u.name" (onClick)="openEdit(u)" />
                 <p-button data-test="delete" icon="pi pi-trash" [text]="true" severity="danger" [ariaLabel]="'Usuń ' + u.name"
                           [attr.title]="isSelf(u.id) ? 'Nie możesz usunąć własnego konta' : null" [disabled]="isSelf(u.id)" (onClick)="remove(u)" />
@@ -96,15 +96,16 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     </p-dialog>
   `,
   styles: `
-    .head { display: flex; justify-content: space-between; align-items: center; }
+    .head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .5rem 1rem; }
     .error { margin: 1rem 0; }
     .list { width: 100%; border-collapse: collapse; } .list th, .list td { text-align: left; padding: .5rem; border-bottom: 1px solid #e5e7eb; }
     .form { display: flex; flex-direction: column; gap: .5rem; }
     .row { display: flex; gap: .5rem; align-items: center; }
+    .row input { flex: 1; min-width: 0; }
     .field-error { margin: 0; font-size: .875rem; color: #b00020; }
     .toggle { white-space: nowrap; }
     .hint { margin: 0; font-size: .875rem; }
-    .actions { display: flex; justify-content: flex-end; gap: .5rem; }
+    .actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .5rem; }
   `,
 })
 export class UsersAdminPage {

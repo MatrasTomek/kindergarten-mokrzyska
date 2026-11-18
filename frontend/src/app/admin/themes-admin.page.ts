@@ -71,8 +71,10 @@ const HEX = /^#[0-9a-f]{6}$/i;
             <div class="swatches" aria-hidden="true">
               @for (s of shades; track s) { <span [style.background]="t.palette[s]"></span> }
             </div>
-            <strong>{{ t.name }}</strong>
-            <span>{{ t.type === 'season' ? 'sezonowy, od ' + formatStart(t.seasonStart) : 'okolicznościowy' }}</span>
+            <div class="info">
+              <strong>{{ t.name }}</strong>
+              <span>{{ t.type === 'season' ? 'sezonowy, od ' + formatStart(t.seasonStart) : 'okolicznościowy' }}</span>
+            </div>
             <p-button icon="pi pi-pencil" [text]="true" [ariaLabel]="'Edytuj ' + t.name" (onClick)="openEdit(t)" />
             @if (t.type === 'special') {
               <p-button icon="pi pi-trash" [text]="true" severity="danger" [ariaLabel]="'Usuń ' + t.name" (onClick)="remove(t)" />
@@ -117,12 +119,15 @@ const HEX = /^#[0-9a-f]{6}$/i;
     .error { margin: 1rem 0; }
     .box { border: 1px solid #e5e7eb; border-radius: .5rem; padding: 1rem; margin-bottom: 1.5rem; }
     .row { display: flex; gap: .5rem; align-items: center; margin: .5rem 0; flex-wrap: wrap; }
+    .box { min-width: 0; }
+    .row p-select { min-width: 0; max-width: 100%; }
     .hint { margin: .25rem 0; color: #4b5563; }
     .decor-preview { list-style: none; padding: 0; margin: .5rem 0 0; display: flex; flex-wrap: wrap; gap: .75rem; }
     .decor-preview img { display: block; }
-    .head { display: flex; justify-content: space-between; align-items: center; }
-    .themes { list-style: none; padding: 0; } .themes li { display: flex; gap: 1rem; align-items: center; padding: .5rem 0; border-bottom: 1px solid #e5e7eb; }
-    .swatches { display: flex; } .swatches span { width: 1.25rem; height: 1.25rem; }
+    .head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .5rem 1rem; }
+    .themes { list-style: none; padding: 0; } .themes li { display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: center; padding: .5rem 0; border-bottom: 1px solid #e5e7eb; }
+    .themes .info { flex: 1 1 12rem; min-width: 0; display: flex; flex-wrap: wrap; gap: 0 1rem; align-items: baseline; }
+    .swatches { display: flex; flex-wrap: wrap; } .swatches span { width: 1.25rem; height: 1.25rem; }
     .form { display: flex; flex-direction: column; gap: .75rem; }
     .colors { display: grid; grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); gap: .5rem; }
     .color { display: grid; grid-template-columns: 1fr auto; gap: .25rem .5rem; align-items: center; }

@@ -76,7 +76,8 @@ export function zdjeciaForm(n: number): string {
     .hint { font-size: .875rem; color: #4b5563; }
     .warn { color: #92400e; font-weight: 600; }
     .queue { list-style: none; padding: 0; }
-    .queue li { display: flex; gap: .75rem; align-items: center; padding: .25rem 0; }
+    .queue li { display: flex; flex-wrap: wrap; gap: .25rem .75rem; align-items: center; padding: .25rem 0; }
+    .queue .name { min-width: 0; overflow-wrap: anywhere; }
     .status { font-weight: 700; color: #b91c1c; }
     .error { color: #b91c1c; }
     .grid { list-style: none; padding: 0; display: grid; gap: .75rem; grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); }

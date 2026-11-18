@@ -23,13 +23,13 @@ import { focusAfterConfirm } from '../shared/focus-after-confirm';
         <p-button data-test="retry" label="Spróbuj ponownie" (onClick)="load()" />
       </div>
     } @else if (groups(); as list) {
-      <table class="list">
+      <table class="list admin-table">
         <thead><tr><th>Kolejność</th><th>Nazwa</th><th>Adres</th><th><span class="sr-only">Akcje</span></th></tr></thead>
         <tbody>
           @for (g of list; track g.id) {
             <tr>
-              <td>{{ g.order }}</td><td>{{ g.name }}</td><td>/grupy/{{ g.slug }}</td>
-              <td>
+              <td data-label="Kolejność">{{ g.order }}</td><td data-label="Nazwa">{{ g.name }}</td><td data-label="Adres">/grupy/{{ g.slug }}</td>
+              <td class="actions-cell">
                 <p-button icon="pi pi-pencil" [text]="true" [ariaLabel]="'Edytuj ' + g.name" (onClick)="openEdit(g)" />
                 <p-button icon="pi pi-trash" severity="danger" [text]="true" [ariaLabel]="'Usuń ' + g.name" (onClick)="remove(g)" />
               </td>
@@ -65,7 +65,7 @@ import { focusAfterConfirm } from '../shared/focus-after-confirm';
     </p-dialog>
   `,
   styles: `
-    .head { display: flex; justify-content: space-between; align-items: center; }
+    .head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .5rem 1rem; }
     .error { margin: 1rem 0; }
     .actions { display: flex; justify-content: flex-end; gap: .5rem; }
     .field { display: flex; flex-direction: column; gap: .25rem; margin-bottom: 1rem; }
