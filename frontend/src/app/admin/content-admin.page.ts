@@ -33,7 +33,7 @@ const emptyDraft = (page: string, order: number): ContentInput =>
       <h1 tabindex="-1" #heading>Treści podstron</h1>
       <p-button data-test="new" label="+ Nowy element" [disabled]="items() === null" (onClick)="openNew()" />
     </div>
-    <label for="page-select">Podstrona</label>
+    <label for="page-select" class="page-label">Podstrona</label>
     <p-select inputId="page-select" [options]="pages" optionLabel="title" optionValue="slug" [ngModel]="page()" (ngModelChange)="selectPage($event)" />
 
     @if (error(); as msg) {
@@ -42,19 +42,19 @@ const emptyDraft = (page: string, order: number): ContentInput =>
         <p-button data-test="retry" label="Spróbuj ponownie" (onClick)="load()" />
       </div>
     } @else if (items(); as list) {
-      <table class="list">
+      <table class="list admin-table">
         <thead><tr><th>Kolejność</th><th>Tytuł</th><th>Status</th><th>Załączniki</th><th><span class="sr-only">Akcje</span></th></tr></thead>
         <tbody>
           @for (item of list; track item.id) {
             <tr>
-              <td>{{ item.order }}</td><td>{{ item.title }}</td>
-              <td><p-tag [value]="item.status === 'published' ? 'Opublikowany' : 'Szkic'" [severity]="item.status === 'published' ? 'success' : 'secondary'" /></td>
-              <td>
+              <td data-label="Kolejność">{{ item.order }}</td><td data-label="Tytuł">{{ item.title }}</td>
+              <td data-label="Status"><p-tag [value]="item.status === 'published' ? 'Opublikowany' : 'Szkic'" [severity]="item.status === 'published' ? 'success' : 'secondary'" /></td>
+              <td data-label="Załączniki">
                 @for (a of item.attachments; track a.file) {
                   <a [href]="url(a.file)" target="_blank" rel="noopener">{{ a.name }}<span class="sr-only"> (otwiera się w nowej karcie)</span></a>@if (!$last) {, }
                 } @empty { — }
               </td>
-              <td>
+              <td class="actions-cell">
                 <p-button icon="pi pi-pencil" [text]="true" [ariaLabel]="'Edytuj ' + item.title" (onClick)="openEdit(item)" />
                 <p-button icon="pi pi-trash" [text]="true" severity="danger" [ariaLabel]="'Usuń ' + item.title" (onClick)="remove(item)" />
               </td>
@@ -98,8 +98,8 @@ const emptyDraft = (page: string, order: number): ContentInput =>
         <label for="c-order">Kolejność na stronie</label>
         <p-inputnumber inputId="c-order" name="order" [(ngModel)]="draft.order" [useGrouping]="false" />
         <div class="row" role="group" aria-label="Status">
-          <p-radiobutton inputId="c-pub" name="status" value="published" [(ngModel)]="draft.status" /><label for="c-pub">Opublikowany</label>
-          <p-radiobutton inputId="c-draft" name="status" value="draft" [(ngModel)]="draft.status" /><label for="c-draft">Szkic</label>
+          <span class="opt"><p-radiobutton inputId="c-pub" name="status" value="published" [(ngModel)]="draft.status" /><label for="c-pub">Opublikowany</label></span>
+          <span class="opt"><p-radiobutton inputId="c-draft" name="status" value="draft" [(ngModel)]="draft.status" /><label for="c-draft">Szkic</label></span>
         </div>
         @if (saveError(); as msg) { <p class="err" role="alert" data-test="save-error">{{ msg }}</p> }
         <div class="actions">
@@ -110,16 +110,19 @@ const emptyDraft = (page: string, order: number): ContentInput =>
     </p-dialog>
   `,
   styles: `
-    .head { display: flex; justify-content: space-between; align-items: center; }
+    .head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .5rem 1rem; }
     .error { margin: 1rem 0; }
     .err { color: #b91c1c; font-weight: 600; }
     .hint { font-size: .875rem; color: #4b5563; }
     .list { width: 100%; border-collapse: collapse; margin-top: 1rem; } .list th, .list td { text-align: left; padding: .5rem; border-bottom: 1px solid #e5e7eb; }
     .form { display: flex; flex-direction: column; gap: .75rem; }
-    fieldset { border: 1px solid #e5e7eb; border-radius: .5rem; padding: 1rem; }
-    .att { list-style: none; padding: 0; }
-    .row { display: flex; gap: .5rem; align-items: center; }
-    .actions { display: flex; justify-content: flex-end; gap: .5rem; }
+    fieldset { min-width: 0; border: 1px solid #e5e7eb; border-radius: .5rem; padding: 1rem; }
+    .att { list-style: none; padding: 0; } .att li { overflow-wrap: anywhere; }
+    .opt { display: inline-flex; gap: .5rem; align-items: center; margin-right: .5rem; }
+    .page-label { display: block; margin-bottom: .25rem; }
+    p-select { width: 100%; max-width: 24rem; }
+    .row { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+    .actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .5rem; }
     .p-button:has(input:focus-visible) { outline: 3px solid #1d4ed8; outline-offset: 2px; }
   `,
 })

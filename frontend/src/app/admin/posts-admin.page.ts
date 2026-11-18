@@ -26,16 +26,16 @@ import { AdminPost, Paged } from '../core/models';
         <p-button data-test="retry" label="Spróbuj ponownie" (onClick)="load(page)" />
       </div>
     } @else if (data(); as d) {
-      <table class="list">
+      <table class="list admin-table">
         <thead><tr><th>Tytuł</th><th>Status</th><th>Opublikowano</th><th>Zmieniono</th><th><span class="sr-only">Akcje</span></th></tr></thead>
         <tbody>
           @for (p of d.items; track p.id) {
             <tr>
-              <td><a [routerLink]="['/admin/wpisy', p.id]">{{ p.title }}</a></td>
-              <td><p-tag [value]="p.status === 'published' ? 'Opublikowany' : 'Szkic'" [severity]="p.status === 'published' ? 'success' : 'secondary'" /></td>
-              <td>{{ p.publishedAt ? (p.publishedAt | date: 'd.MM.y HH:mm') : '—' }}</td>
-              <td>{{ p.updatedAt | date: 'd.MM.y HH:mm' }}</td>
-              <td>
+              <td data-label="Tytuł"><a [routerLink]="['/admin/wpisy', p.id]">{{ p.title }}</a></td>
+              <td data-label="Status"><p-tag [value]="p.status === 'published' ? 'Opublikowany' : 'Szkic'" [severity]="p.status === 'published' ? 'success' : 'secondary'" /></td>
+              <td data-label="Opublikowano">{{ p.publishedAt ? (p.publishedAt | date: 'd.MM.y HH:mm') : '—' }}</td>
+              <td data-label="Zmieniono">{{ p.updatedAt | date: 'd.MM.y HH:mm' }}</td>
+              <td class="actions-cell">
                 @if (auth.isAdmin()) {
                   <p-button data-test="delete" icon="pi pi-trash" severity="danger" [text]="true" [ariaLabel]="'Usuń wpis ' + p.title" (onClick)="confirmDelete(p)" />
                 }
@@ -55,7 +55,7 @@ import { AdminPost, Paged } from '../core/models';
   `,
   styles: `
     .error { margin: 1rem 0; }
-    .head { display: flex; justify-content: space-between; align-items: center; }
+    .head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .5rem 1rem; }
     .list { width: 100%; border-collapse: collapse; }
     .list th, .list td { text-align: left; padding: .5rem; border-bottom: 1px solid #e5e7eb; }
   `,

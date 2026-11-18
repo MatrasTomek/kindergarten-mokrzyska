@@ -82,3 +82,26 @@ html.a11y-contrast :focus-visible { outline-color: #fff; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
+
+/* --- panel administracyjny: telefon --- */
+/* Etykieta przycisku łamana na 2 linie rozdyma przycisk w pionie — zamiast tego zawijają się kontenery (.head, .actions…). */
+app-admin-layout .p-button, .p-dialog .p-button { white-space: nowrap; }
+
+/* Tabele list (wpisy, grupy, treści, użytkownicy): na wąskim ekranie każdy wiersz to karta „etykieta: wartość”,
+   bo 4–5 kolumn rozpychało całą stronę. Etykiety z data-label; nagłówki tabeli zostają dla czytników ekranu. */
+table.admin-table td { overflow-wrap: anywhere; }
+@media (max-width: 40rem) {
+  table.admin-table, table.admin-table tbody, table.admin-table tr { display: block; width: 100%; }
+  table.admin-table { margin-top: 1rem; }
+  table.admin-table thead {
+    position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap;
+  }
+  table.admin-table tr { border: 1px solid #e5e7eb; border-radius: .5rem; padding: .25rem .75rem; margin-bottom: .75rem; }
+  table.admin-table td { display: grid; grid-template-columns: 7.5rem minmax(0, 1fr); gap: .75rem; align-items: baseline; padding: .375rem 0 !important; }
+  table.admin-table tr td:not(:last-child) { border-bottom: 1px solid #f1f5f9 !important; }
+  table.admin-table td:last-child { border-bottom: 0 !important; }
+  table.admin-table td[data-label]::before { content: attr(data-label); content: attr(data-label) / ''; font-weight: 700; font-size: .875rem; }
+  /* Komórka bez etykiety (akcje, „Brak …”) — na całą szerokość. */
+  table.admin-table td:not([data-label]) { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem; }
+  table.admin-table td.actions-cell { justify-content: flex-end; }
+}

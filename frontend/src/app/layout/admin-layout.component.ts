@@ -18,9 +18,9 @@ import { AuthService } from '../core/auth/auth.service';
     <app-a11y-toolbar />
     <header class="top">
       <a routerLink="/" class="home">← Strona</a>
-      <strong>Panel administracyjny</strong>
+      <strong class="title">Panel administracyjny</strong>
       <span class="spacer"></span>
-      <span>{{ auth.user()?.name }}</span>
+      <span class="user">{{ auth.user()?.name }}</span>
       <p-button label="Wyloguj" severity="secondary" size="small" (onClick)="logout()" />
     </header>
     <div class="body">
@@ -39,15 +39,29 @@ import { AuthService } from '../core/auth/auth.service';
     <p-confirmdialog />
   `,
   styles: `
-    .top { display: flex; gap: 1rem; align-items: center; padding: .75rem 1rem; background: var(--app-primary-900); color: #fff; }
-    .top a { color: #fff; }
+    .top { display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: center; padding: .75rem 1rem; background: var(--app-primary-900); color: #fff; }
+    .top a { color: #fff; white-space: nowrap; }
     .spacer { flex: 1; }
-    .body { display: grid; grid-template-columns: 14rem 1fr; min-height: calc(100vh - 3.5rem); }
+    .user { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .body { display: grid; grid-template-columns: 14rem minmax(0, 1fr); min-height: calc(100vh - 3.5rem); }
     nav { display: flex; flex-direction: column; gap: .25rem; padding: 1rem; background: var(--app-primary-50); }
     nav a { padding: .5rem .75rem; border-radius: .5rem; color: var(--app-text); text-decoration: none; }
     nav a.active { background: var(--app-primary-200); font-weight: 700; }
     main { padding: 1.5rem; min-width: 0; outline: none; }
-    @media (max-width: 48rem) { .body { grid-template-columns: 1fr; } nav { flex-direction: row; flex-wrap: wrap; } }
+    @media (max-width: 48rem) {
+      .body { grid-template-columns: minmax(0, 1fr); }
+      nav { flex-direction: row; flex-wrap: wrap; padding: .5rem 1rem; }
+      nav a { padding: .375rem .625rem; }
+      main { padding: 1rem; }
+    }
+    @media (max-width: 40rem) {
+      .top { padding: .5rem 1rem; }
+      /* Tytuł w osobnej linii, pod nim „← Strona” … użytkownik + Wyloguj. */
+      .title { order: -1; flex-basis: 100%; }
+      .spacer { display: none; }
+      /* Długie imię i nazwisko przycina się wielokropkiem zamiast spychać „Wyloguj” do kolejnej linii. */
+      .user { flex: 1 1 0; text-align: right; }
+    }
   `,
 })
 export class AdminLayoutComponent {
