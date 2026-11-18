@@ -11,7 +11,14 @@ use MongoDB\Collection;
 
 final class LoginRateLimiter
 {
-    private const LIMIT = 5;
+    /** Zgadywanie hasła do jednego konta. */
+    private const EMAIL_LIMIT = 5;
+    /**
+     * Wiele kont z jednego adresu. Wyraźnie wyżej niż EMAIL_LIMIT: cały personel przedszkola wychodzi
+     * do internetu przez jeden router (jedno publiczne IP), więc kilka pomyłek różnych osób
+     * nie może blokować logowania wszystkim pozostałym.
+     */
+    private const IP_LIMIT = 60;
     private const WINDOW_SECONDS = 900;
     private Collection $col;
 
@@ -23,8 +30,8 @@ final class LoginRateLimiter
     public function tooManyAttempts(string $ip, string $email): bool
     {
         $since = new UTCDateTime(($this->clock->now()->getTimestamp() - self::WINDOW_SECONDS) * 1000);
-        foreach (["ip:$ip", "email:$email"] as $key) {
-            if ($this->col->countDocuments(['key' => $key, 'createdAt' => ['$gte' => $since]]) >= self::LIMIT) {
+        foreach (["ip:$ip" => self::IP_LIMIT, "email:$email" => self::EMAIL_LIMIT] as $key => $limit) {
+            if ($this->col->countDocuments(['key' => $key, 'createdAt' => ['$gte' => $since]]) >= $limit) {
                 return true;
             }
         }
